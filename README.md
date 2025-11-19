@@ -143,6 +143,10 @@ AI-based flood prediction
 
 Time-series satellite data viewer
 
+Matplotlib Graph Viewer
+
+ChatBot for quick doubts
+
 
 
 
