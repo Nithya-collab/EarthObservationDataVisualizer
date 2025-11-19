@@ -17,8 +17,8 @@ District & state boundaries
 The system uses ISRO’s Bhuvan open datasets and other source processes them with PostGIS, serves them via a FastAPI backend, and displays them using Leaflet.js on the frontend.
 
 
-## Project Features
-# Filters
+# Project Features
+## Filters
 
 Flood / Forest Fire / Population checkboxes
 
@@ -30,7 +30,7 @@ Layer toggle controls
 
 Full-screen dynamic map
 
-# Data Visualization
+## Data Visualization
 
 GeoJSON polygons
 
@@ -42,7 +42,7 @@ District boundaries
 
 Region-based queries
 
-# Source: ISRO Bhuvan Data
+## Source: ISRO Bhuvan Data
 
 Flood hazard maps
 
@@ -52,8 +52,8 @@ LULC datasets
 
 Administrative boundaries
 
- ## Tech Stack
- # Frontend (Map UI)
+ # Tech Stack
+ ## Frontend (Map UI)
 
 Leaflet.js – Interactive maps
 
@@ -61,7 +61,7 @@ HTML / CSS / JavaScript – UI
 
 Axios – API requests
 
- # Backend (API Service)
+ ## Backend (API Service)
 
 FastAPI – Fast Python API framework
 
@@ -75,7 +75,7 @@ SQLAlchemy (ORM)
 
 Pydantic (data validation)
 
-# Database
+## Database
 
 PostgreSQL – relational storage
 
@@ -87,7 +87,7 @@ Enables spatial queries
 
 Converts shapes → GeoJSON
 
-# GIS Tools
+## GIS Tools
 
 Bhuvan (ISRO) – official open Earth data
 
@@ -119,11 +119,11 @@ earth-visualizer/
 │    ..............
 └── README.md
 
-# Run the Backend
+## Run the Backend
 uvicorn main:app --reload
-Backend API will be available at:http://localhost:8000
+Backend API will be available at: <u>http://localhost:8000</u>
 
-#Run the Frontend
+## Run the Frontend
 frontend/index.html
 
 # Future Improvements
