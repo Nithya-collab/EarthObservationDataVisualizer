@@ -1,6 +1,6 @@
 
 import './index.css'
-import App from './App.jsx'
+import App from './App.js'
 import ReactDOM from "react-dom/client";
 import { createBrowserRouter } from "react-router";
 import { RouterProvider } from "react-router/dom";
@@ -14,6 +14,7 @@ const router = createBrowserRouter([
 
 const root = document.getElementById("root");
 
-ReactDOM.createRoot(root).render(
+// Add the '!' here to assert that root is not null
+ReactDOM.createRoot(root!).render(
   <RouterProvider router={router} />,
 );
