@@ -98,7 +98,9 @@ ogr2ogr – converting SHP ↔ GeoJSON
 shp2pgsql – importing shapefiles into PostGIS
 
 # Project Structure
-earth-visualizer/
+<pre>
+ ```
+ earth-visualizer/
 │
 ├── backend/
 │   ├── main.py
@@ -118,6 +120,9 @@ earth-visualizer/
 │   └── boundaries/
 │    ..............
 └── README.md
+ 
+ ```
+</pre>
 
 ## Run the Backend
 uvicorn main:app --reload
