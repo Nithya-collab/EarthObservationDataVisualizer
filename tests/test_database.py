@@ -41,3 +41,23 @@ def test_failed_db_connection():
             db_host="localhost",
             db_port="5432"
         )
+
+def test_postgis_extension_is_installed(db_connection_params):
+    conn = get_db_connection(**db_connection_params)
+    cursor = conn.cursor()
+    
+    # Query to check for the existence of the postgis extension
+    query = """
+    SELECT EXISTS (
+        SELECT 1
+        FROM pg_extension
+        WHERE extname = 'postgis'
+    );
+    """
+    cursor.execute(query)
+    is_installed = cursor.fetchone()[0]
+    
+    cursor.close()
+    conn.close()
+
+    assert is_installed is True, "PostGIS extension is not installed in the database!"
