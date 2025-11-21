@@ -39,6 +39,7 @@ const Leaflet: React.FC = () => {
   const mapStyles = {
     height: '100vh', // The map container must have a defined height/width
     width: '100%',
+    zIndex: 0, // Ensure the map is at the correct stacking context
   };
 
   return <div ref={mapContainerRef} style={mapStyles} />;

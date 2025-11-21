@@ -17,7 +17,7 @@ const root = document.getElementById("root");
 
 // Add the '!' here to assert that root is not null
 ReactDOM.createRoot(root!).render(
-  <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+  <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
     <RouterProvider router={router} />
   </ThemeProvider>,
 );
