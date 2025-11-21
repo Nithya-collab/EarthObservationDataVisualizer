@@ -1,35 +1,30 @@
-import { useState } from 'react'
-import reactLogo from '@/assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { AppSidebar } from "@/components/ui/sidebar/app-sidebar"
+import { Separator } from "@/components/ui/separator"
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar"
+import Leaflet from "./components/ui/library/Leaflet"
 
-function App() {
-  const [count, setCount] = useState(0)
-
+export default function Page() {
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card bg-amber-200 p-4 rounded-md">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator
+            orientation="vertical"
+            className="mr-2 data-[orientation=vertical]:h-4"
+          />
+        </header>
+        <div className="flex p-4">
+          <Leaflet></Leaflet>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
+
+    
   )
 }
-
-export default App

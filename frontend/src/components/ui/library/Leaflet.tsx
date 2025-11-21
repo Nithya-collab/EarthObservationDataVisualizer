@@ -37,7 +37,7 @@ const Leaflet: React.FC = () => {
 
   // You also need to add CSS styling for the map div (e.g., height) for it to be visible
   const mapStyles = {
-    height: '500px', // The map container must have a defined height/width
+    height: '100vh', // The map container must have a defined height/width
     width: '100%',
   };
 
