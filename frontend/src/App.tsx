@@ -25,6 +25,7 @@ function SidebarInsetContent() {
       </header>
       <div className="flex">
         <Leaflet></Leaflet>
+        <Legend />
         <ModeToggle className="bg-white/45 dark:bg-black/45! z-2 absolute bottom-5 right-2"></ModeToggle>
       </div>
     </SidebarInset>
@@ -32,11 +33,37 @@ function SidebarInsetContent() {
 
 }
 
+function Legend() {
+  return (
+    <div>
+      {/* LEGEND */}
+      <div id="legend" className="backdrop-blur-xs absolute bottom-8 right-8 shadow-xl px-6 py-6 rounded-lg space-y-4">
+        <h2 className="font-semibold text-lg mb-2">Legend</h2>
+
+        <div className="flex items-center space-x-3">
+          <div className="w-6 h-6 bg-red-300/40 border border-white/20"></div>
+          <span>Low</span>
+        </div>
+
+        <div className="flex items-center space-x-3">
+          <div className="w-6 h-6 bg-red-500/40 border border-white/20"></div>
+          <span>Medium</span>
+        </div>
+
+        <div className="flex items-center space-x-3">
+          <div className="w-6 h-6 bg-red-700/40 border border-white/20"></div>
+          <span>High</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Page() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInsetContent /> 
+      <SidebarInsetContent />
     </SidebarProvider>
 
 

@@ -111,7 +111,7 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar {...props}>
+    <Sidebar className="backdrop-blur-xs" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
