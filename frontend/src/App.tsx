@@ -14,9 +14,9 @@ function SidebarInsetContent() {
   const { open } = useSidebar();
   return (
     <SidebarInset>
-      <header className="flex absolute top-0 left-12 shrink-0 items-center gap-2 border-b px-4">
-        <SidebarTrigger className={cn("-ml-1 bg-white/45 dark:bg-black/45 z-1",
-          open ? "ml-50" : "-ml-12"
+      <header className="flex absolute top-4 left-12 shrink-0 items-center gap-2 border-b px-4">
+        <SidebarTrigger className={cn("size-9 bg-orange-200 dark:bg-black z-10",
+          open ? "ml-32" : "-ml-12"
         )} />
         <Separator
           orientation="vertical"
