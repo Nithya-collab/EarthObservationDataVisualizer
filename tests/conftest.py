@@ -1,8 +1,7 @@
 # conftest.py
 import pytest
 from sqlalchemy import create_engine, event
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.ext.declarative import declarative_base # Keep this import here
+from sqlalchemy.orm import sessionmaker, Session, declarative_base
 
 # --- GLOBAL BASE OBJECT ---
 # This single Base instance will be used by all models defined in your application
