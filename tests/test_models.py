@@ -1,15 +1,12 @@
 # tests/test_models.py
 import pytest
 from geoalchemy2 import WKBElement, WKTElement
+from shapely import wkb
 from shapely.geometry import Point
 from sqlalchemy import Column, Integer, String
-from sqlalchemy.orm import declarative_base # Updated import for newer SQLAlchemy
 from geoalchemy2 import Geometry
 # !!! IMPORT 'Base' from the configuration file where it is instantiated !!!
 from tests.conftest import Base 
-# If your project structure eventually moves Base to my_app/database.py, you would import it from there instead.
-
-# !! We will write the actual model definition later, as the test drives the design !!
 
 # --- Test Definitions ---
 
@@ -40,7 +37,7 @@ def test_insert_and_retrieve_spatial_data(db_session):
     Test inserting a record with a spatial point and retrieving it, 
     verifying it returns a GeoAlchemy2 object.
     """
-    from my_app.models import Place # We will create this file later
+    from map_viz.models import Place # We will create this file later
 
     # Create a WKTElement for insertion
     p = WKTElement('POINT(-122.330082 47.603832)', srid=4326) # Seattle downtown coordinates
@@ -57,7 +54,7 @@ def test_insert_and_retrieve_spatial_data(db_session):
     assert retrieved_place.geom.srid == 4326
     
     # Use shapely for easy comparison of coordinates
-    shapely_geom = retrieved_place.geom.geom_ibly
+    shapely_geom = wkb.loads(bytes(retrieved_place.geom.data))
     assert isinstance(shapely_geom, Point)
     assert shapely_geom.x == pytest.approx(-122.330082)
     assert shapely_geom.y == pytest.approx(47.603832)
@@ -67,7 +64,7 @@ def test_spatial_query_ST_Within(db_session):
     """
     Test performing a spatial query using GeoAlchemy2's functions (e.g., ST_Within).
     """
-    from my_app.models import Place
+    from map_viz.models import Place
     from geoalchemy2.functions import ST_Within
     from sqlalchemy import func
 

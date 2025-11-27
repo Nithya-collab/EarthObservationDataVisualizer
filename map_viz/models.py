@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String
 from geoalchemy2 import Geometry
-from my_app.database import Base # Import our configured Base object
+from map_viz.database import Base
 
 class Place(Base):
     """
@@ -14,4 +14,3 @@ class Place(Base):
 
     def __repr__(self):
         return f"<Place(name='{self.name}', geom='{self.geom}')>"
-        
