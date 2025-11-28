@@ -17,7 +17,8 @@ import {
   SidebarMenuItem,
   SidebarMenuSub,
 } from "@/components/ui/sidebar"
-import { Label } from "../label"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 // This is sample data.
 const data = {
@@ -153,8 +154,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         {item.items.map((item) => (
                           <>
                             <Label htmlFor={item.title}>
-                              <input id={item.title} type="checkbox"></input>
-                              {item.title}</Label>
+                              <Input id={item.title} type="checkbox" className="w-[15px] bg-white"></Input> 
+                              {item.title}
+                            </Label>
                           </>
                         ))}
                       </SidebarMenuSub>
