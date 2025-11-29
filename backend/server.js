@@ -6,13 +6,22 @@ const app = express();
 app.use(cors());
 
 // PostgreSQL connection
+// const pool = new Pool({
+//   host: "localhost",
+//   user: "postgres",
+//   password: "1234",
+//   database: "test_kare",
+//   port: 5432,
+// });
+
 const pool = new Pool({
-  host: "localhost",
-  user: "postgres",
-  password: "1234",
-  database: "test_kare",
-  port: 5432,
+  host: process.env.POSTGRES_HOST,   // ← THIS will be "db"
+  port: process.env.POSTGRES_PORT,
+  user: process.env.POSTGRES_USER,
+  password: process.env.POSTGRES_PASSWORD,
+  database: process.env.POSTGRES_DB
 });
+
 
 // Endpoint to get GeoJSON
 app.get("/locations", async (req, res) => {
@@ -36,4 +45,5 @@ app.get("/locations", async (req, res) => {
   }
 });
 
+module.exports = pool;
 app.listen(5000, () => console.log("Server running on port 5000"));

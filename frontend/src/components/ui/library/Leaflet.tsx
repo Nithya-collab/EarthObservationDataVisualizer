@@ -59,6 +59,8 @@ const Leaflet: React.FC = () => {
 
   useEffect(() => {
     if (mapContainerRef.current && !mapInstanceRef.current) {
+      console.log('map ref container ' , mapContainerRef)
+      console.log('map instance ref ' , mapInstanceRef)
       mapInstanceRef.current = L.map(mapContainerRef.current, { zoomControl: false }).setView([40, -74], 5);
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
