@@ -9,7 +9,7 @@ import {
 import Leaflet from "./components/ui/library/Leaflet"
 import { ModeToggle } from "./components/ui/mode-toggle"
 import { cn } from "./lib/utils"
-import  Map  from "./Map.tsx"
+
 
 function SidebarInsetContent() {
   const { open, isMobile } = useSidebar();
@@ -28,7 +28,11 @@ function SidebarInsetContent() {
         <Leaflet></Leaflet>
          {/* <Map /> */}
         <Legend className="bg-white/45 dark:bg-black/45!" />
-        <ModeToggle className="bg-white/45 dark:bg-black/45! z-2 absolute bottom-5 right-2"></ModeToggle>
+        {/* <ModeToggle className="bg-white/45 dark:bg-black/45! z-2 absolute bottom-5 right-2"></ModeToggle> */}
+      <div className="relative">
+  <ModeToggle className="mr-20 bg-white/45 dark:bg-black/45 !z-20 absolute top-2 right-2" />
+</div>
+
       </div>
     </SidebarInset>
   )

@@ -49,32 +49,124 @@
 
 
 
-import React, { useEffect, useRef } from 'react';
-import * as L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+
+
+
+// import React, { useEffect, useRef } from 'react';
+// import * as L from 'leaflet';
+// import 'leaflet/dist/leaflet.css';
+
+// const Leaflet: React.FC = () => {
+//   const mapContainerRef = useRef<HTMLDivElement>(null);
+//   const mapInstanceRef = useRef<L.Map | null>(null);
+
+//   useEffect(() => {
+//     if (mapContainerRef.current && !mapInstanceRef.current) {
+//       mapInstanceRef.current = L.map(mapContainerRef.current, { zoomControl: false }).setView([40, -74], 5);
+
+//       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+//         maxZoom: 19,
+//         attribution: "© OpenStreetMap",
+//       }).addTo(mapInstanceRef.current);
+
+//       L.control.zoom({ position: 'topright' }).addTo(mapInstanceRef.current!);
+
+//       // Corrected fetch URL with port
+//       fetch("http://localhost:5000/locations")
+//         .then(res => res.json())
+//         .then(data => {
+//           L.geoJSON(data).addTo(mapInstanceRef.current!);
+//         })
+//         .catch(err => console.error(err));
+//     }
+
+//     return () => {
+//       if (mapInstanceRef.current) {
+//         mapInstanceRef.current.remove();
+//         mapInstanceRef.current = null;
+//       }
+//     };
+//   }, []);
+
+//   const mapStyles = {
+//     height: '100vh',
+//     width: '100%',
+//     zIndex: 0,
+//   };
+
+//   return <div ref={mapContainerRef} style={mapStyles} />;
+// };
+
+// export default Leaflet;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import React, { useEffect, useRef } from "react";
+import * as L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { useTheme } from "@/components/theme-provider";
 
 const Leaflet: React.FC = () => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
 
+  const lightTileRef = useRef<L.TileLayer | null>(null);
+  const darkTileRef = useRef<L.TileLayer | null>(null);
+
+  const { theme } = useTheme();
+
+
   useEffect(() => {
     if (mapContainerRef.current && !mapInstanceRef.current) {
-      mapInstanceRef.current = L.map(mapContainerRef.current, { zoomControl: false }).setView([40, -74], 5);
+      mapInstanceRef.current = L.map(mapContainerRef.current, {
+        zoomControl: false,
+      }).setView([40, -74], 5);
 
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: "© OpenStreetMap",
-      }).addTo(mapInstanceRef.current);
+      lightTileRef.current = L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+          maxZoom: 19,
+          attribution: "© OpenStreetMap",
+        }
+      );
 
-      L.control.zoom({ position: 'topright' }).addTo(mapInstanceRef.current!);
+   
+      darkTileRef.current = L.tileLayer(
+        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+        {
+          maxZoom: 19,
+          attribution: "© CARTO",
+        }
+      );
 
-      // Corrected fetch URL with port
+ 
+      lightTileRef.current.addTo(mapInstanceRef.current);
+
+      L.control.zoom({ position: "topright" }).addTo(mapInstanceRef.current);
+
+      // fetch geojson
       fetch("http://localhost:5000/locations")
-        .then(res => res.json())
-        .then(data => {
+        .then((res) => res.json())
+        .then((data) => {
           L.geoJSON(data).addTo(mapInstanceRef.current!);
         })
-        .catch(err => console.error(err));
+        .catch((err) => console.error(err));
     }
 
     return () => {
@@ -85,13 +177,30 @@ const Leaflet: React.FC = () => {
     };
   }, []);
 
-  const mapStyles = {
-    height: '100vh',
-    width: '100%',
-    zIndex: 0,
-  };
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
 
-  return <div ref={mapContainerRef} style={mapStyles} />;
+    const map = mapInstanceRef.current;
+
+    if (theme === "dark") {
+      if (lightTileRef.current) map.removeLayer(lightTileRef.current);
+      if (darkTileRef.current) darkTileRef.current.addTo(map);
+    } else {
+      if (darkTileRef.current) map.removeLayer(darkTileRef.current);
+      if (lightTileRef.current) lightTileRef.current.addTo(map);
+    }
+  }, [theme]);
+
+  return (
+    <div
+      ref={mapContainerRef}
+      style={{
+        height: "100vh",
+        width: "100%",
+        zIndex: 0,
+      }}
+    />
+  );
 };
 
 export default Leaflet;
