@@ -76,7 +76,7 @@ const Leaflet: React.FC = () => {
         })
         .catch(err => console.error(err));
     }
-
+console.log('Map initialized')
     return () => {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
