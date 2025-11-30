@@ -1,27 +1,22 @@
-# docker-compose.yml
 services:
   backend:
     build: ./backend
-    container_name: geo_backend
+    container_name: python_backend
     ports:
       - "5000:5000"
     environment:
-      POSTGRES_HOST: host.docker.internal   # connect to existing Postgres on host
+      POSTGRES_HOST: host.docker.internal
       POSTGRES_PORT: 5432
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 1234
       POSTGRES_DB: test_kare
-    depends_on: []
-    # No depends_on for external container
 
   frontend:
     build: ./frontend
-    container_name: geo_frontend
+    container_name: python_frontend
     ports:
       - "5173:5173"
     environment:
       VITE_BACKEND_URL: http://host.docker.internal:5000
     depends_on:
       - backend
-
-# No db service here since you're using an existing container
