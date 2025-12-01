@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import YearRangeSelect from "../YearRange"
 
 // This is sample data.
 const data = {
@@ -132,6 +133,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
 
         <SearchForm />
+        <YearRangeSelect/>
       </SidebarHeader>
 
       <SidebarContent>
