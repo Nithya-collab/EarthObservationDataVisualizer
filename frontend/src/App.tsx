@@ -9,6 +9,7 @@ import {
 import Leaflet from "./components/ui/library/Leaflet"
 import { ModeToggle } from "./components/ui/mode-toggle"
 import { cn } from "./lib/utils"
+import BrightnessOpacityControl from "./components/ui/controlles/BrightnessOpacityControl"
 
 
 function SidebarInsetContent() {
@@ -28,6 +29,10 @@ function SidebarInsetContent() {
         <Leaflet></Leaflet>
          {/* <Map /> */}
         <Legend className="bg-white/45 dark:bg-black/45!" />
+        <div className="absolute top-1/2 right-4 transform -translate-y-1/2">
+  <BrightnessOpacityControl />
+</div>
+
         {/* <ModeToggle className="bg-white/45 dark:bg-black/45! z-2 absolute bottom-5 right-2"></ModeToggle> */}
       <div className="relative">
   <ModeToggle className="mr-20 bg-white/45 dark:bg-black/45 !z-20 absolute top-2 right-2" />
