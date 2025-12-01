@@ -136,6 +136,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <YearRangeSelect/>
       </SidebarHeader>
 
+      <hr className="mt-5 mb-5 text-black bg-gray-500"></hr>
+
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenu>

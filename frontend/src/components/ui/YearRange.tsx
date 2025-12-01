@@ -36,9 +36,9 @@ const YEARS = Array.from({ length: 3000 - 2025 + 1 }, (_, i) => 2025 + i);
   }, [start, end]);
 
   return (
-    <div className="flex items-center space-x-3">
+    <div className="flex items-center space-x-3 mt-5">
       <div className="flex flex-col">
-        <label className="text-xs font-medium mb-1">From</label>
+        <label className="text-xs font-medium mb-1 ml-3">From</label>
         <Select onValueChange={(v) => setStart(Number(v))} defaultValue={String(start)}>
           <SelectTrigger className="w-26">
             <SelectValue placeholder="Start" />
