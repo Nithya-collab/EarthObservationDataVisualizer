@@ -10,9 +10,10 @@ import Leaflet from "./components/ui/library/Leaflet"
 import { ModeToggle } from "./components/ui/mode-toggle"
 import { cn } from "./lib/utils"
 import BrightnessOpacityControl from "./components/ui/controlles/BrightnessOpacityControl"
+import { useState } from "react"
 
 
-function SidebarInsetContent() {
+function SidebarInsetContent({ brightness, opacity, setBrightness, setOpacity }: any) {
   const { open, isMobile } = useSidebar();
   return (
     <SidebarInset>
@@ -26,17 +27,25 @@ function SidebarInsetContent() {
         />
       </header>
       <div className="flex">
-        <Leaflet></Leaflet>
-         {/* <Map /> */}
+        <Leaflet
+          brightness={brightness}
+          opacity={opacity}
+        />
+        {/* <Map /> */}
         <Legend className="bg-white/45 dark:bg-black/45!" />
         <div className="absolute top-1/2 right-4 transform -translate-y-1/2">
-  <BrightnessOpacityControl />
-</div>
+          <BrightnessOpacityControl
+            brightness={brightness}
+            opacity={opacity}
+            onBrightnessChange={setBrightness}
+            onOpacityChange={setOpacity}
+          />
+        </div>
 
         {/* <ModeToggle className="bg-white/45 dark:bg-black/45! z-2 absolute bottom-5 right-2"></ModeToggle> */}
-      <div className="relative">
-  <ModeToggle className="mr-20 bg-white/45 dark:bg-black/45 !z-20 absolute top-2 right-2" />
-</div>
+        <div className="relative">
+          <ModeToggle className="mr-20 bg-white/45 dark:bg-black/45 !z-20 absolute top-2 right-2" />
+        </div>
 
       </div>
     </SidebarInset>
@@ -71,10 +80,17 @@ function Legend({ className }: React.ComponentProps<"div">) {
 }
 
 export default function Page() {
+  const [brightness, setBrightness] = useState(50);
+  const [opacity, setOpacity] = useState(100);
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInsetContent />
+      <SidebarInsetContent
+        brightness={brightness}
+        opacity={opacity}
+        setBrightness={setBrightness}
+        setOpacity={setOpacity}
+      />
     </SidebarProvider>
 
 
