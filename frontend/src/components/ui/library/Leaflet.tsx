@@ -26,19 +26,29 @@ useEffect(() => {
   const district = params.get("district") || "";
   const start = params.get("start") || "";
   const end = params.get("end") || "";
-  const fire = params.get("fire") || "";
+  const category = params.get("category") || "";
 
-  const initialFilters = { district, start, end, fire };
+  const initialFilters = { district, start, end, category };
   fetchGeoJson(initialFilters);
 }, [location.search]);
 
 
   // ⬇️ FRONTEND FILTERED DATA FUNCTION
   const fetchGeoJson = (filters: any) => {
-    fetch("http://localhost:5000/locations")
+    const query = new URLSearchParams({
+  district: filters.district || "",
+  start: filters.start || "",
+  end: filters.end || "",
+  category: filters.category || "",
+}).toString();
+
+
+    fetch(`http://localhost:5000/locations?${query}`)
       .then((res) => res.json())
       .then((data) => {
         if (!mapInstanceRef.current) return;
+
+        const selectedCategories = filters.category.split(","); // ["Forest Fire", "Flood"]
 
         // FRONTEND FILTERING LOGIC
         const filteredData = data.features.filter((f:any) => {
@@ -47,7 +57,7 @@ useEffect(() => {
             filters.district === "Tiruchirappalli" &&
             filters.start === "2025" &&
             filters.end === "2025" &&
-            filters.fire === "yes";
+            selectedCategories.includes("Forest Fire");
           return show;
         });
 
@@ -68,9 +78,9 @@ useEffect(() => {
       .catch((err) => console.error("GeoJSON fetch error", err));
   };
 
-  useEffect(() => {
-  if (filters) fetchGeoJson(filters);
-}, [filters]);
+//   useEffect(() => {
+//   if (filters) fetchGeoJson(filters);
+// }, [filters]);
 
   // 🌍 Create map once
   useEffect(() => {
