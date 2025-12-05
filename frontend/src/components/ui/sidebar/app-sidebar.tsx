@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import YearRangeSelect from "../YearRange"
+
 
 // This is sample data.
 const data = {
@@ -111,7 +111,19 @@ const data = {
   ],
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+  districts,
+  setDistricts,
+  range,
+  setRange,
+  category,
+  setCategory,
+  ...props
+}: any) {
+
+  const toggle = () => {
+    console.log("Toggle clicked")
+  }
 
   return (
     <Sidebar className="backdrop-blur-xs" {...props}>
@@ -132,8 +144,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenuItem>
         </SidebarMenu>
 
-        <SearchForm />
-        <YearRangeSelect/>
+        {/* <SearchForm /> */}
+
+        <SearchForm
+          districts={districts}
+          setDistricts={setDistricts}
+          range={range}
+          setRange={setRange}
+          category={category}
+          setCategory={setCategory}
+        />
+
+        {/* <YearRangeSelect/> */}
       </SidebarHeader>
 
       <hr className="mt-5 mb-5 text-black bg-gray-500"></hr>
@@ -157,6 +179,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
                   <CollapsibleContent>
                     <SidebarMenuSub>
+
                       {items?.items?.map((item) => (
                         <Label
                           key={item.title}
@@ -167,10 +190,27 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             id={item.title}
                             type="checkbox"
                             className="w-[15px] bg-white"
+                            onChange={(e) => {
+                              const isChecked = e.target.checked;
+
+                              setCategory((prev: string[]) => {
+                                if (isChecked) {
+                                  // ADD item if not already present
+                                  return prev.includes(item.title)
+                                    ? prev
+                                    : [...prev, item.title];
+                                } else {
+                                  // REMOVE item
+                                  return prev.filter((cat) => cat !== item.title);
+                                }
+                              });
+                            }}
                           />
+
                           {item.title}
                         </Label>
                       ))}
+
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </SidebarMenuItem>
