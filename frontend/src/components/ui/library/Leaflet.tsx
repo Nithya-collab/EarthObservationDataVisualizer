@@ -1,48 +1,170 @@
-import React, { useEffect, useRef } from 'react';
-import * as L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import React, { useEffect, useRef } from "react";
+import * as L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { useTheme } from "@/components/theme-provider";
+import { FeatureCollection } from "geojson";
+import { useLocation } from "react-router-dom";
 
-const Leaflet: React.FC = () => {
-  // Ref for the div element that will hold the map
+
+const Leaflet: React.FC<{ brightness: number; opacity: number; filters?: any }> = ({
+  brightness,
+  opacity,
+  filters,
+}) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  // Ref to store the Leaflet map instance
-  const mapInstanceRef = useRef<L.Map | null>(null);
+  const mapInstanceRef = useRef<L.Map | any>(null); // allow custom layer property
 
+  const lightTileRef = useRef<L.TileLayer | null>(null);
+  const darkTileRef = useRef<L.TileLayer | null>(null);
+
+  const { theme } = useTheme();
+
+  const location = useLocation();
+
+useEffect(() => {
+  const params = new URLSearchParams(location.search);
+  const district = params.get("district") || "";
+  const start = params.get("start") || "";
+  const end = params.get("end") || "";
+  const category = params.get("category") || "";
+
+  const initialFilters = { district, start, end, category };
+  fetchGeoJson(initialFilters);
+}, [location.search]);
+
+
+  // ⬇️ FRONTEND FILTERED DATA FUNCTION
+  const fetchGeoJson = (filters: any) => {
+    const query = new URLSearchParams({
+  district: filters.district || "",
+  start: filters.start || "",
+  end: filters.end || "",
+  category: filters.category || "",
+}).toString();
+
+
+    fetch(`http://localhost:5000/locations?${query}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!mapInstanceRef.current) return;
+
+        const selectedCategories = filters.category.split(","); // ["Forest Fire", "Flood"]
+
+        // FRONTEND FILTERING LOGIC
+        const filteredData = data.features.filter((f:any) => {
+          // Only show data if filters match exactly
+          const show =
+            filters.district === "Tiruchirappalli" &&
+            filters.start === "2025" &&
+            filters.end === "2025" &&
+            selectedCategories.includes("Forest Fire");
+          return show;
+        });
+
+        const newGeoJson:FeatureCollection  = {
+          type: "FeatureCollection",
+          features: filteredData,
+        };
+
+        // remove old layer if exists
+        if (mapInstanceRef.current._geoJsonLayer) {
+          mapInstanceRef.current.removeLayer(mapInstanceRef.current._geoJsonLayer);
+        }
+
+        // add new filtered layer
+        const layer = L.geoJSON(newGeoJson).addTo(mapInstanceRef.current);
+        mapInstanceRef.current._geoJsonLayer = layer;
+      })
+      .catch((err) => console.error("GeoJSON fetch error", err));
+  };
+
+//   useEffect(() => {
+//   if (filters) fetchGeoJson(filters);
+// }, [filters]);
+
+  // 🌍 Create map once
   useEffect(() => {
-    // Check if the DOM element is available and if the map hasn't been initialized yet
     if (mapContainerRef.current && !mapInstanceRef.current) {
-      // Initialize the map on the ref's current DOM element (disable default zoom control)
-      mapInstanceRef.current = L.map(mapContainerRef.current, { zoomControl: false }).setView([20.5937, 78.9629], 5);
+      mapInstanceRef.current = L.map(mapContainerRef.current, {
+        zoomControl: false,
+      }).setView([40, -74], 5);
 
-      // Add the tile layer
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      // tiles
+      lightTileRef.current = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: "© OpenStreetMap",
-      }).addTo(mapInstanceRef.current);
+        opacity: opacity / 100,
+      });
 
-      // Add a new zoom control to the desired position (e.g., 'bottomright')
-      L.control.zoom({
-        position: 'topright' // Options: 'topleft', 'topright', 'bottomleft', 'bottomright'
-      }).addTo(mapInstanceRef.current!);
+      darkTileRef.current = L.tileLayer(
+        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+        {
+          maxZoom: 19,
+          attribution: "© CARTO",
+          opacity: opacity / 100,
+        }
+      );
+
+      // default is light
+      lightTileRef.current.addTo(mapInstanceRef.current);
+
+      L.control.zoom({ position: "topright" }).addTo(mapInstanceRef.current);
+
+      // load initial data with default filters
+      fetchGeoJson(filters || {});
     }
 
-    // Cleanup function to remove the map instance when the component unmounts
     return () => {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
     };
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, []);
 
-  // You also need to add CSS styling for the map div (e.g., height) for it to be visible
-  const mapStyles = {
-    height: '100vh', // The map container must have a defined height/width
-    width: '100%',
-    zIndex: 0, // Ensure the map is at the correct stacking context
-  };
+  // 🎛 Update opacity of both layers
+  useEffect(() => {
+    if (lightTileRef.current) lightTileRef.current.setOpacity(opacity / 100);
+    if (darkTileRef.current) darkTileRef.current.setOpacity(opacity / 100);
+  }, [opacity]);
 
-  return <div ref={mapContainerRef} style={mapStyles} />;
+  // 💡 Update brightness
+  useEffect(() => {
+    const tilePane = document.querySelector(".leaflet-tile-pane") as HTMLElement;
+    if (tilePane) tilePane.style.filter = `brightness(${brightness}%)`;
+  }, [brightness]);
+
+  // 🌓 Theme switching
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+
+    if (theme === "dark") {
+      if (lightTileRef.current) map.removeLayer(lightTileRef.current);
+      if (darkTileRef.current) darkTileRef.current.addTo(map);
+    } else {
+      if (darkTileRef.current) map.removeLayer(darkTileRef.current);
+      if (lightTileRef.current) lightTileRef.current.addTo(map);
+    }
+  }, [theme]);
+
+  // 🔄 Re-fetch when filters change
+  useEffect(() => {
+    if (filters) {
+      fetchGeoJson(filters);
+    }
+  }, [filters]);
+
+  return (
+    <div
+      ref={mapContainerRef}
+      style={{
+        height: "100vh",
+        width: "100%",
+        zIndex: 0,
+      }}
+    />
+  );
 };
 
 export default Leaflet;
