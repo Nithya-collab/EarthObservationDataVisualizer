@@ -6,10 +6,11 @@ import { FeatureCollection } from "geojson";
 import { useLocation } from "react-router-dom";
 
 
-const Leaflet: React.FC<{ brightness: number; opacity: number; filters?: any }> = ({
+const Leaflet: React.FC<{ brightness: number; opacity: number; filters?: any , onMouseMove?: (latlng: { lat: number; lng: number }) => void }> = ({
   brightness,
   opacity,
   filters,
+  onMouseMove 
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | any>(null); // allow custom layer property
@@ -88,6 +89,16 @@ useEffect(() => {
       mapInstanceRef.current = L.map(mapContainerRef.current, {
         zoomControl: false,
       }).setView([40, -74], 5);
+
+     //  MOUSE MOVE LISTENER
+      mapInstanceRef.current.on("mousemove", (e: L.LeafletMouseEvent) => {
+      if (onMouseMove) {
+        onMouseMove({
+          lat: e.latlng.lat,
+          lng: e.latlng.lng,
+        });
+      }
+    });
 
       // tiles
       lightTileRef.current = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {

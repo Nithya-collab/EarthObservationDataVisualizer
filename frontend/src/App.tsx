@@ -12,6 +12,7 @@ import { cn } from "./lib/utils"
 import BrightnessOpacityControl from "./components/ui/controlles/BrightnessOpacityControl"
 import { useState } from "react"
 
+import {Card, CardContent} from "@/components/ui/card"
 
 function SidebarInsetContent({
   brightness,
@@ -21,9 +22,20 @@ function SidebarInsetContent({
   districts,
   range,
   category,
+   mouseLatLng,
+  setMouseLatLng
 }: any) {
   const { open, isMobile } = useSidebar();
- 
+ function toDegree(value: number, type: "lat" | "lng") {
+  const abs = Math.abs(value).toFixed(4);
+  const direction =
+    type === "lat"
+      ? value >= 0 ? "N" : "S"
+      : value >= 0 ? "E" : "W";
+
+  return `${abs}° ${direction}`;
+}
+
   return (
     <SidebarInset>
       <header className="flex absolute top-4 left-12 shrink-0 items-center gap-2 border-b px-4">
@@ -35,17 +47,44 @@ function SidebarInsetContent({
           className="mr-2 data-[orientation=vertical]:h-4"
         />
       </header>
+<Card
+  className="
+    absolute
+    top-4
+    left-1/2
+    -translate-x-1/2
+    z-30
+    w-[300px]
+    bg-card/80
+    backdrop-blur-sm
+    text-card-foreground
+    shadow-xl
+  "
+>
+
+  <CardContent className="flex justify-center gap-4">
+    <p>
+  lat: {mouseLatLng ? toDegree(mouseLatLng.lat, "lat") : "--"}
+</p>
+<p>
+  lng: {mouseLatLng ? toDegree(mouseLatLng.lng, "lng") : "--"}
+</p>
+
+  </CardContent>
+</Card>
+
       <div className="flex">
-       <Leaflet
-  brightness={brightness}
-  opacity={opacity}
-  filters={{
-    district: districts.join(","),
-    start: range[0],
-    end: range[1],
-    category: category.join(",")
-  }}
-/>
+        <Leaflet
+          brightness={brightness}
+          opacity={opacity}
+          filters={{
+            district: districts.join(","),
+            start: range[0],
+            end: range[1],
+            category: category.join(",")
+          }}
+          onMouseMove={setMouseLatLng}
+        />
         {/* <Map /> */}
         <Legend className="bg-white/45 dark:bg-black/45!" />
         <div className="absolute top-1/2 right-4 transform -translate-y-1/2">
@@ -102,6 +141,8 @@ export default function Page() {
   const [range, setRange] = useState<[number, number]>([2025, 2027]);
   const [category, setCategory] = useState<string[]>([]);
 
+  const [mouseLatLng, setMouseLatLng] = useState<{ lat: number; lng: number } | null>(null);
+
   return (
     <SidebarProvider>
       <AppSidebar
@@ -120,6 +161,8 @@ export default function Page() {
         districts={districts}
         range={range}
         category={category}
+         mouseLatLng={mouseLatLng}          
+        setMouseLatLng={setMouseLatLng}
       />
     </SidebarProvider>
 
