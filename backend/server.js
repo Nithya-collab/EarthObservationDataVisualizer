@@ -47,24 +47,47 @@ const pool = new Pool({
 
 
 
+// app.get("/locations", async (req, res) => {
+//   const result = await pool.query("SELECT x, y FROM imported_features");
+//   // const result = await pool.query("SELECT x, y FROM kat");
+//   const geojson = {
+//     type: "FeatureCollection",
+//     features: result.rows.map(row => ({
+//       type: "Feature",
+//       geometry: {
+//         type: "Point",
+//         coordinates: [parseFloat(row.x), parseFloat(row.y)],
+//       },
+//       properties: {},
+//     })),
+//   };
+
+//   res.json(geojson);
+// });
+
 app.get("/locations", async (req, res) => {
-  const result = await pool.query("SELECT x, y FROM imported_features");
+  const result = await pool.query(`
+    SELECT id, ST_AsGeoJSON(geom) as geometry, district, taluk, area
+    FROM kat
+    LIMIT 100
+  `);
+  
+ 
 
-  const geojson = {
-    type: "FeatureCollection",
-    features: result.rows.map(row => ({
-      type: "Feature",
-      geometry: {
-        type: "Point",
-        coordinates: [parseFloat(row.x), parseFloat(row.y)],
-      },
-      properties: {},
-    })),
-  };
+  // convert rows into GeoJSON FeatureCollection
+  const features = result.rows.map(row => ({
+    type: "Feature",
+    geometry: JSON.parse(row.geometry),
+    properties: {
+      id: row.id,
+      district: row.district,
+      taluk: row.taluk,
+      area: row.area
+    }
+  }));
 
-  res.json(geojson);
+  res.json({ type: "FeatureCollection", features });
 });
-
 
 
 module.exports = pool;
