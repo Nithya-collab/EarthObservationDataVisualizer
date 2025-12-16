@@ -20,7 +20,12 @@ services:
       context: ./backend
       dockerfile: dockerfile  # Explicitly point to your lowercase file
     container_name: geo_backend
-    command: tail -f /dev/null  # Forces the container to stay alive
+    tty: true            # Keeps the container from exiting
+    stdin_open: true     # Allows interactive terminal access
+    command: /bin/sh -c "while sleep 1000; do :; done" # Ultimate keep-alive fallback
+    volumes:
+      # This mounts your local project root to the container's workspace path
+      - ..:/workspaces/${localWorkspaceFolderBasename}:cached
     environment:
       POSTGRES_HOST: db   # This is the 'db' service name above
       POSTGRES_PORT: 5432
