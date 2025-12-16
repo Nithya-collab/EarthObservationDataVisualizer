@@ -4,7 +4,7 @@ services:
     container_name: geo_db
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: yourstrongpassword
+      POSTGRES_PASSWORD: 1234
       POSTGRES_DB: test_kare
     ports:
       - "5432:5432"
