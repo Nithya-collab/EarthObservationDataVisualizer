@@ -20,6 +20,7 @@ services:
       context: ./backend
       dockerfile: dockerfile  # Explicitly point to your lowercase file
     container_name: geo_backend
+    command: tail -f /dev/null  # Forces the container to stay alive
     environment:
       POSTGRES_HOST: db   # This is the 'db' service name above
       POSTGRES_PORT: 5432
