@@ -1,18 +1,20 @@
 import express from 'express';
 import cors from 'cors';
 import { Pool } from 'pg';
+import 'dotenv/config'; // Loads variables from .env
 
 const app = express();
 app.use(cors());
 
-// PostgreSQL connection
-const pool = new Pool({
-  host: "localhost",
-  user: "postgres",
-  password: "1234",
-  database: "test_kare",
-  port: 5432,
-});
+const dbConfig = {
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "postgres",
+  password: process.env.DB_PASSWORD || "1234",
+  database: process.env.DB_NAME || "test_kare",
+  port: parseInt(process.env.DB_PORT || "5432"),
+};
+
+const pool = new Pool(dbConfig);
 
 // const pool = new Pool({
 //   host: process.env.POSTGRES_HOST,   // ← THIS will be "db"
