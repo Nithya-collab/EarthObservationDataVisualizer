@@ -1,24 +1,22 @@
 {
-  "name": "Geo Project Dev Environment",
+  "name": "Geo Data Visualizer",
   "dockerComposeFile": "../docker-compose.yml",
-  "service": "backend", // The service Codespaces will "attach" to
+  "service": "backend",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
-
-  // Port forwarding for both services
-  "forwardPorts": [5000, 5173],
-
-  // Optional: Install common extensions inside the container
+  
+  // Forwarded ports for the backend and frontend
+  "forwardPorts": [5000, 5173, 5432],
+  
   "customizations": {
     "vscode": {
       "extensions": [
         "ms-azuretools.vscode-docker",
-        "ms-python.python", // If using Python backend
-        "dbaeumer.vscode-eslint" // If using JS frontend
+        "ms-vscode.vscode-typescript-next",
+        "dbaeumer.vscode-eslint"
       ]
     }
   },
 
-  // Commands to run after the container is created
-  "postCreateCommand": "pip install -r requirements.txt" // Adjust based on your tech stack
+  // Automatically install node modules after container creation
+  "postCreateCommand": "npm install"
 }
-
