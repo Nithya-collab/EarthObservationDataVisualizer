@@ -28,6 +28,6 @@
     }
   },
 
-  // Automatically install node modules after container creation
-  "postCreateCommand": "cd frontend && npm install"
+  // Installs dependencies for both folders and prints Node 24 is used
+  "postCreateCommand": "node -v && npm install --prefix backend && npm install --prefix frontend"
 }
