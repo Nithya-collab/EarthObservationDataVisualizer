@@ -1,0 +1,24 @@
+{
+  "name": "Geo Project Dev Environment",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "backend", // The service Codespaces will "attach" to
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+
+  // Port forwarding for both services
+  "forwardPorts": [5000, 5173],
+
+  // Optional: Install common extensions inside the container
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-azuretools.vscode-docker",
+        "ms-python.python", // If using Python backend
+        "dbaeumer.vscode-eslint" // If using JS frontend
+      ]
+    }
+  },
+
+  // Commands to run after the container is created
+  "postCreateCommand": "pip install -r requirements.txt" // Adjust based on your tech stack
+}
+
