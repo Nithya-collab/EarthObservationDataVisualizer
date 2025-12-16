@@ -9,25 +9,24 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
+      # pg_isready is a built-in tool to check if the DB is up
+      test: ["CMD-SHELL", "pg_isready -U postgres -d test_kare"]
+      interval: 5s
       timeout: 5s
       retries: 5
 
   backend:
     build: ./backend
     container_name: geo_backend
-    ports:
-      - "5000:5000"
     environment:
-      POSTGRES_HOST: db # Use service name instead of host.docker.internal
+      POSTGRES_HOST: db   # This is the 'db' service name above
       POSTGRES_PORT: 5432
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: yourstrongpassword
+      POSTGRES_PASSWORD: 1234
       POSTGRES_DB: test_kare
     depends_on:
       db:
-        condition: service_healthy
+        condition: service_healthy # Backend starts ONLY after db passes healthcheck
 
   frontend:
     build: ./frontend
