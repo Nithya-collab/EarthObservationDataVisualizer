@@ -9,7 +9,12 @@
 
   "containerEnv": {
     "NODE_OPTIONS": "--max-old-space-size=3072"
-  }, 
+  },
+
+  
+  // Setting to true (default) lets VS Code manage the keep-alive.
+  // Setting to false forces VS Code to use your Dockerfile's CMD.
+  "overrideCommand": true ,
   
   "customizations": {
     "vscode": {
