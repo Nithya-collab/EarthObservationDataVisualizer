@@ -66,14 +66,27 @@ const pool = new Pool({
 // });
 
 app.get("/locations", async (req, res) => {
+  // const result = await pool.query(`
+  //   SELECT id, ST_AsGeoJSON(geom) as geometry, district, taluk, area
+  //   FROM kat
+  //   LIMIT 100
+  // `);
+  const { minLng, minLat, maxLng, maxLat } = req.query;
   const result = await pool.query(`
-    SELECT id, ST_AsGeoJSON(geom) as geometry, district, taluk, area
-    FROM kat
-    LIMIT 100
-  `);
-  
+    SELECT
+  id,
+  ST_AsGeoJSON(
+    ST_SimplifyPreserveTopology(geom, 0.01)
+  ) AS geometry,
+  district,
+  taluk,
+  area
+FROM kat
+WHERE ST_Intersects(
+  geom,
+  ST_MakeEnvelope($1, $2, $3, $4, 4326)
+)`, [minLng, minLat, maxLng, maxLat]);
  
-
   // convert rows into GeoJSON FeatureCollection
   const features = result.rows.map(row => ({
     type: "Feature",

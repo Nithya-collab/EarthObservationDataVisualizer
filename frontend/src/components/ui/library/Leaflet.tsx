@@ -22,11 +22,18 @@ const Leaflet: React.FC<{
 
   // ---------------- FETCH GEOJSON ----------------
   const fetchGeoJson = async (filters: any) => {
+    if (!mapRef.current) return;
+const bounds = mapRef.current.getBounds();
+
     const query = new URLSearchParams({
       district: filters?.district || "",
       start: filters?.start || "",
       end: filters?.end || "",
       category: filters?.category || "",
+      minLng: bounds.getWest().toString(),
+    minLat: bounds.getSouth().toString(),
+    maxLng: bounds.getEast().toString(),
+    maxLat: bounds.getNorth().toString()
     }).toString();
 
     const res = await fetch(`http://localhost:5000/locations?${query}`);
@@ -42,7 +49,7 @@ const Leaflet: React.FC<{
     const zoom = mapRef.current.getZoom();
     pointLayerRef.current.clearLayers();
 
-    if (zoom < 4) return;
+    if (zoom < 10) return;
 
     geojson.features.forEach((feature: any) => {
       const geom = feature.geometry;
@@ -55,6 +62,7 @@ const Leaflet: React.FC<{
           fillOpacity: 1,
           stroke: false,
         }).addTo(pointLayerRef.current!);
+        
       };
 
       if (geom.type === "Polygon") {
@@ -168,3 +176,21 @@ const Leaflet: React.FC<{
 };
 
 export default Leaflet;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
