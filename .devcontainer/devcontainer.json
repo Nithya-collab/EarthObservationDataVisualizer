@@ -29,5 +29,5 @@
   },
 
   // Automatically install node modules after container creation
-  "postCreateCommand": "npm install"
+  // "postCreateCommand": "cd frontend && npm install"
 }
