@@ -16,7 +16,9 @@ services:
       retries: 5
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: dockerfile  # Explicitly point to your lowercase file
     container_name: geo_backend
     environment:
       POSTGRES_HOST: db   # This is the 'db' service name above
