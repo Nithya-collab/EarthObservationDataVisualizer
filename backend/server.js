@@ -65,41 +65,80 @@ const pool = new Pool({
 //   res.json(geojson);
 // });
 
-app.get("/locations", async (req, res) => {
-  // const result = await pool.query(`
-  //   SELECT id, ST_AsGeoJSON(geom) as geometry, district, taluk, area
-  //   FROM kat
-  //   LIMIT 100
-  // `);
-  const { minLng, minLat, maxLng, maxLat } = req.query;
-  const result = await pool.query(`
-    SELECT
-  id,
-  ST_AsGeoJSON(
-    ST_SimplifyPreserveTopology(geom, 0.01)
-  ) AS geometry,
-  district,
-  taluk,
-  area
-FROM kat
-WHERE ST_Intersects(
-  geom,
-  ST_MakeEnvelope($1, $2, $3, $4, 4326)
-)`, [minLng, minLat, maxLng, maxLat]);
+// app.get("/locations", async (req, res) => {
+//   const { minLng, minLat, maxLng, maxLat } = req.query;
+//   const result = await pool.query(`
+//     SELECT
+//   id,
+//   ST_AsGeoJSON(
+//     ST_SimplifyPreserveTopology(geom, 0.01)
+//   ) AS geometry,
+//   district,
+//   taluk,
+//   area
+// FROM kat
+// WHERE ST_Intersects(
+//   geom,
+//   ST_MakeEnvelope($1, $2, $3, $4, 4326)
+// )`, [minLng, minLat, maxLng, maxLat]);
  
-  // convert rows into GeoJSON FeatureCollection
-  const features = result.rows.map(row => ({
-    type: "Feature",
-    geometry: JSON.parse(row.geometry),
-    properties: {
-      id: row.id,
-      district: row.district,
-      taluk: row.taluk,
-      area: row.area
-    }
-  }));
+//   // convert rows into GeoJSON FeatureCollection
+//   const features = result.rows.map(row => ({
+//     type: "Feature",
+//     geometry: JSON.parse(row.geometry),
+//     properties: {
+//       id: row.id,
+//       district: row.district,
+//       taluk: row.taluk,
+//       area: row.area
+//     }
+//   }));
 
-  res.json({ type: "FeatureCollection", features });
+//   res.json({ type: "FeatureCollection", features });
+// });
+
+
+app.get("/locations", async (req, res) => {
+  try {
+    const { minLng, minLat, maxLng, maxLat } = req.query;
+
+    const result = await pool.query(
+      `
+      SELECT
+        ogc_fid,
+        villagenameenglish,
+        districtnameenglish,
+        statenameenglish,
+        ST_AsGeoJSON(wkb_geometry) AS geometry
+      FROM tamil_nadu_village
+      WHERE ST_Intersects(
+        wkb_geometry,
+        ST_MakeEnvelope($1, $2, $3, $4, 4326)
+      )
+      LIMIT 5000
+      `,
+      [minLng, minLat, maxLng, maxLat]
+    );
+
+    const geojson = {
+      type: "FeatureCollection",
+      features: result.rows.map(row => ({
+        type: "Feature",
+        geometry: JSON.parse(row.geometry),
+        properties: {
+          id: row.ogc_fid,
+          village: row.villagenameenglish,
+          district: row.districtnameenglish,
+          state: row.statenameenglish
+        }
+      }))
+    };
+
+    res.json(geojson);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
 });
 
 

@@ -43,43 +43,76 @@ const bounds = mapRef.current.getBounds();
   };
 
   // ---------------- DRAW ONLY SMALL DOTS ----------------
-  const drawPoints = (geojson: FeatureCollection) => {
-    if (!mapRef.current || !pointLayerRef.current) return;
+  // const drawPoints = (geojson: FeatureCollection) => {
+  //   if (!mapRef.current || !pointLayerRef.current) return;
 
-    const zoom = mapRef.current.getZoom();
-    pointLayerRef.current.clearLayers();
+  //   const zoom = mapRef.current.getZoom();
+  //   pointLayerRef.current.clearLayers();
 
-    if (zoom < 10) return;
+  //   if (zoom < 10) return;
 
-    geojson.features.forEach((feature: any) => {
-      const geom = feature.geometry;
-      if (!geom) return;
+  //   geojson.features.forEach((feature: any) => {
+  //     const geom = feature.geometry;
+  //     if (!geom) return;
 
-      const addDot = (lng: number, lat: number) => {
-        L.circleMarker([lat, lng], {
-          radius: 1,
-          fillColor: "#ff0000",
-          fillOpacity: 1,
-          stroke: false,
-        }).addTo(pointLayerRef.current!);
+  //     const addDot = (lng: number, lat: number) => {
+  //       L.circleMarker([lat, lng], {
+  //         radius: 1,
+  //         fillColor: "#ff0000",
+  //         fillOpacity: 1,
+  //         stroke: false,
+  //       }).addTo(pointLayerRef.current!);
         
-      };
+  //     };
 
-      if (geom.type === "Polygon") {
-        geom.coordinates[0].forEach(([lng, lat]: number[]) =>
-          addDot(lng, lat)
-        );
-      }
+  //     if (geom.type === "Polygon") {
+  //       geom.coordinates[0].forEach(([lng, lat]: number[]) =>
+  //         addDot(lng, lat)
+  //       );
+  //     }
 
-      if (geom.type === "MultiPolygon") {
-        geom.coordinates.forEach((poly: any) => {
-          poly[0].forEach(([lng, lat]: number[]) =>
-            addDot(lng, lat)
-          );
-        });
-      }
-    });
-  };
+  //     if (geom.type === "MultiPolygon") {
+  //       geom.coordinates.forEach((poly: any) => {
+  //         poly[0].forEach(([lng, lat]: number[]) =>
+  //           addDot(lng, lat)
+  //         );
+  //       });
+  //     }
+  //   });
+  // };
+
+
+  const drawPoints = (geojson: FeatureCollection) => {
+  if (!mapRef.current || !pointLayerRef.current) return;
+
+  const zoom = mapRef.current.getZoom();
+  pointLayerRef.current.clearLayers();
+
+  // performance: don't draw when zoomed out
+  if (zoom < 8) return;
+
+  geojson.features.forEach((feature: any) => {
+    if (!feature.geometry || feature.geometry.type !== "Point") return;
+
+    const [lng, lat] = feature.geometry.coordinates;
+
+    L.circleMarker([lat, lng], {
+      radius: zoom >= 12 ? 3 : 1.5,
+      fillColor: "#ff0000",
+      fillOpacity: 0.9,
+      stroke: false,
+    })
+      .bindTooltip(
+        `
+        <b>${feature.properties.village}</b><br/>
+        ${feature.properties.district}
+        `,
+        { sticky: true }
+      )
+      .addTo(pointLayerRef.current!);
+  });
+};
+
 
   // ---------------- MAP INIT ----------------
   useEffect(() => {
