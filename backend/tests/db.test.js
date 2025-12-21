@@ -5,11 +5,11 @@ const { Client } = pg;
 
 // Connection parameters (equivalent to your pytest fixture)
 const dbConfig = {
-  database: 'test_kare',
-  user: 'postgres',
-  password: '1234', // !! REPLACE THIS
-  host: 'localhost',
+  host: process.env.POSTGRES_HOST || 'db', // 'db' matches service name in compose
   port: 5432,
+  user: 'postgres',
+  password: '1234',
+  database: 'test_kare',
 };
 
 test('successful database connection', async () => {

@@ -1,18 +1,40 @@
-# docker-compose.yml
 services:
-  backend:
-    build: ./backend
-    container_name: geo_backend
-    ports:
-      - "5000:5000"
+  db:
+    image: postgis/postgis:15-3.3-alpine
+    container_name: geo_db
     environment:
-      POSTGRES_HOST: host.docker.internal   # connect to existing Postgres on host
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: test_kare
+    ports:
+      - "5432:5432"
+    healthcheck:
+      # pg_isready is a built-in tool to check if the DB is up
+      test: ["CMD-SHELL", "pg_isready -U postgres -d test_kare"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: dockerfile  # Explicitly point to your lowercase file
+    container_name: geo_backend
+    tty: true            # Keeps the container from exiting
+    stdin_open: true     # Allows interactive terminal access
+    command: /bin/sh -c "while sleep 1000; do :; done" # Ultimate keep-alive fallback
+    volumes:
+      # This mounts your local project root to the container's workspace path
+      - ..:/workspaces/${localWorkspaceFolderBasename}:cached
+    environment:
+      POSTGRES_HOST: db   # This is the 'db' service name above
       POSTGRES_PORT: 5432
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 1234
       POSTGRES_DB: test_kare
-    depends_on: []
-    # No depends_on for external container
+    depends_on:
+      db:
+        condition: service_healthy # Backend starts ONLY after db passes healthcheck
 
   frontend:
     build: ./frontend
@@ -20,8 +42,6 @@ services:
     ports:
       - "5173:5173"
     environment:
-      VITE_BACKEND_URL: http://host.docker.internal:5000
+      VITE_BACKEND_URL: http://localhost:5000
     depends_on:
       - backend
-
-# No db service here since you're using an existing container
