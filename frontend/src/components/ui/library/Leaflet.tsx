@@ -10,7 +10,8 @@ const Leaflet: React.FC<{
   opacity: number;
   filters?: any;
   onMouseMove?: (latlng: { lat: number; lng: number }) => void;
-}> = ({ brightness, opacity, filters, onMouseMove }) => {
+  onFeatureClick?: (feature: any, latlng?: L.LatLng) => void;
+}> = ({ brightness, opacity, filters, onMouseMove, onFeatureClick }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
 
@@ -24,6 +25,16 @@ const Leaflet: React.FC<{
     [6.4627, 68.1097],   // South-West (India)
     [35.5133, 97.3956]  // North-East (India)
   );
+
+  // Helper to generate distinct colors for states
+  const getStateColor = (name: string) => {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const c = (hash & 0x00ffffff).toString(16).toUpperCase();
+    return "#" + "00000".substring(0, 6 - c.length) + c;
+  };
 
   // ---------------- FETCH GEOJSON ----------------
   const fetchGeoJson = async (filters: any) => {
@@ -137,6 +148,10 @@ const Leaflet: React.FC<{
     map.createPane("tiles");
     map.getPane("tiles")!.style.zIndex = "200";
 
+    // Create pane for states (between tiles and points)
+    map.createPane("states");
+    map.getPane("states")!.style.zIndex = "300";
+
     lightTileRef.current = L.tileLayer(
       "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       { pane: "tiles", opacity: opacity / 100 }
@@ -148,6 +163,42 @@ const Leaflet: React.FC<{
     );
 
     lightTileRef.current.addTo(map);
+
+    // Fetch and render states
+    fetch("http://localhost:5000/states")
+      .then(res => res.json())
+      .then((data: FeatureCollection) => {
+        L.geoJSON(data, {
+          pane: "states",
+          style: (feature) => {
+            const name = feature?.properties?.state || "";
+            return {
+              color: getStateColor(name),
+              weight: 1,
+              fillColor: getStateColor(name),
+              fillOpacity: 0.3,
+            };
+          },
+          onEachFeature: (feature, layer) => {
+            const pathLayer = layer as L.Path;
+            pathLayer.on({
+              click: (e) => {
+                if (onFeatureClick) onFeatureClick(feature, e.latlng);
+                // Highlight effect
+                pathLayer.setStyle({ weight: 3, fillOpacity: 0.6 });
+              },
+              mouseover: () => {
+                pathLayer.setStyle({ fillOpacity: 0.5 });
+              },
+              mouseout: () => {
+                pathLayer.setStyle({ weight: 1, fillOpacity: 0.3 });
+              }
+            });
+          }
+        }).addTo(map);
+      })
+      .catch(err => console.error("Failed to fetch states:", err));
+
 
     L.control.zoom({ position: "topright" }).addTo(map);
 

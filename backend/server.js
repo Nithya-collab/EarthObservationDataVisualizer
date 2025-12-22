@@ -83,7 +83,7 @@ const pool = new Pool(dbConfig);
 //   geom,
 //   ST_MakeEnvelope($1, $2, $3, $4, 4326)
 // )`, [minLng, minLat, maxLng, maxLat]);
- 
+
 //   // convert rows into GeoJSON FeatureCollection
 //   const features = result.rows.map(row => ({
 //     type: "Feature",
@@ -187,7 +187,7 @@ app.get("/locations", async (req, res) => {
     }
 
     const result = await pool.query(
-  `
+      `
   SELECT
     villagenameenglish,
     districtnameenglish,
@@ -201,8 +201,8 @@ app.get("/locations", async (req, res) => {
     )
   LIMIT 5000
   `,
-  [minLng, minLat, maxLng, maxLat]
-);
+      [minLng, minLat, maxLng, maxLat]
+    );
 
 
     const geojson = {
@@ -222,6 +222,31 @@ app.get("/locations", async (req, res) => {
     res.json(geojson);
   } catch (err) {
     console.error("LOCATIONS ERROR:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Endpoint to get India State Borders
+app.get("/states", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT ST_AsGeoJSON(wkb_geometry) AS geometry, name_1 AS state_name
+      FROM india_state_border
+    `);
+
+    const geojson = {
+      type: "FeatureCollection",
+      features: result.rows.map(row => ({
+        type: "Feature",
+        geometry: JSON.parse(row.geometry),
+        properties: {
+          state: row.state_name
+        }
+      }))
+    };
+    res.json(geojson);
+  } catch (err) {
+    console.error("STATES ERROR:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
