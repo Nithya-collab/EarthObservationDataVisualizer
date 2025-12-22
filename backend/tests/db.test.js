@@ -1,15 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert';
 import pg from 'pg';
+import 'dotenv/config'; // Loads variables from .env
 const { Client } = pg;
 
 // Connection parameters (equivalent to your pytest fixture)
 const dbConfig = {
-  host: process.env.POSTGRES_HOST || 'db', // 'db' matches service name in compose
-  port: 5432,
-  user: 'postgres',
-  password: '1234',
-  database: 'test_kare',
+  host: process.env.DB_HOST || "db", // 'db' matches service name in compose
+  port: parseInt(process.env.DB_PORT || "5432"),
+  user: process.env.DB_USER || "postgres",
+  password: process.env.DB_PASSWORD || "1234",
+  database: process.env.DB_NAME || "test_kare",
 };
 
 test('successful database connection', async () => {
