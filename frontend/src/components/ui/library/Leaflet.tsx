@@ -19,6 +19,10 @@ const Leaflet: React.FC<{
 
   const { theme } = useTheme();
   const location = useLocation();
+const indiaBounds = L.latLngBounds(
+  [6.4627, 68.1097],   // South-West (India)
+  [35.5133, 97.3956]  // North-East (India)
+);
 
   // ---------------- FETCH GEOJSON ----------------
   const fetchGeoJson = async (filters: any) => {
@@ -119,7 +123,11 @@ const bounds = mapRef.current.getBounds();
     if (!mapContainerRef.current || mapRef.current) return;
 
     const map = L.map(mapContainerRef.current, {
-      zoomControl: false,
+        minZoom: 4,        // 👈 prevent zooming too far out
+  maxZoom: 18,
+  maxBounds: indiaBounds,
+  maxBoundsViscosity: 1.0, 
+      // zoomControl: false,
     }).setView([20, 78], 5);
 
     mapRef.current = map;
@@ -160,11 +168,7 @@ const bounds = mapRef.current.getBounds();
     darkTileRef.current?.setOpacity(opacity / 100);
   }, [opacity]);
 
-  // ---------------- BRIGHTNESS ----------------
-  // useEffect(() => {
-  //   const pane = document.querySelector(".leaflet-tile-pane") as HTMLElement;
-  //   if (pane) pane.style.filter = `brightness(${brightness}%)`;
-  // }, [brightness]);
+ 
  useEffect(() => {
   const lightContainer = lightTileRef.current?.getContainer();
   const darkContainer = darkTileRef.current?.getContainer();

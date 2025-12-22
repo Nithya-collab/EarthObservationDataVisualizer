@@ -215,7 +215,6 @@ function SidebarInsetContent({
   range,
   category,
   mouseLatLng,
-  setMouseLatLng,
 }: any) {
   const { open, isMobile } = useSidebar();
 
@@ -285,14 +284,14 @@ function SidebarInsetContent({
         <Legend className="bg-white/60 dark:bg-black/60" />
 
         {/* BRIGHTNESS + OPACITY */}
-        <div className="absolute top-1/2 right-4 z-50 -translate-y-1/2">
+        {/* <div className="absolute top-1/2 right-4 z-50 -translate-y-1/2">
           <BrightnessOpacityControl
             brightness={brightness}
             opacity={opacity}
             onBrightnessChange={setBrightness}
             onOpacityChange={setOpacity}
           />
-        </div>
+        </div> */}
 
         {/* MODE TOGGLE */}
         <ModeToggle className="absolute top-4 right-14 z-50 bg-white/60 dark:bg-black/60" />
@@ -352,6 +351,14 @@ export default function Page() {
         setRange={setRange}
         category={category}
         setCategory={setCategory}
+
+        //  new Ui change 
+
+        brightness={brightness}
+        opacity={opacity}
+        setBrightness={setBrightness}
+        setOpacity={setOpacity}
+
       />
 
       <SidebarInsetContent
