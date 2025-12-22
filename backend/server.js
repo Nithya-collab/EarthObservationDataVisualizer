@@ -100,27 +100,110 @@ const pool = new Pool(dbConfig);
 // });
 
 
+// app.get("/locations", async (req, res) => {
+//   try {
+//     const { minLng, minLat, maxLng, maxLat } = req.query;
+
+//     // const result = await pool.query(
+//     //   `
+//     //   SELECT
+//     //     ogc_fid,
+//     //     villagenameenglish,
+//     //     districtnameenglish,
+//     //     statenameenglish,
+//     //     ST_AsGeoJSON(wkb_geometry) AS geometry
+//     //   FROM india_villages
+//     //   WHERE ST_Intersects(
+//     //     wkb_geometry,
+//     //     ST_MakeEnvelope($1, $2, $3, $4, 4326)
+//     //   )
+//     //   LIMIT 5000
+//     //   `,
+//     //   [minLng, minLat, maxLng, maxLat]
+//     // );
+
+
+//     const result = await pool.query(
+//   `
+//   SELECT
+//     ogc_fid,
+//     villagenameenglish,
+//     districtnameenglish,
+//     statenameenglish,
+//     ST_AsGeoJSON(geom) AS geometry
+//   FROM india_villages
+//   WHERE geom && ST_MakeEnvelope($1, $2, $3, $4, 4326)
+//     AND ST_Intersects(
+//       geom,
+//       ST_MakeEnvelope($1, $2, $3, $4, 4326)
+//     )
+//   LIMIT 5000
+//   `,
+//   [minLng, minLat, maxLng, maxLat]
+// );
+
+
+//     const geojson = {
+//       type: "FeatureCollection",
+//       features: result.rows.map(row => ({
+//         type: "Feature",
+//         geometry: JSON.parse(row.geometry),
+//         properties: {
+//           id: row.ogc_fid,
+//           village: row.villagenameenglish,
+//           district: row.districtnameenglish,
+//           state: row.statenameenglish
+//         }
+//       }))
+//     };
+
+//     res.json(geojson);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// });
+
+
+
+
+
+
 app.get("/locations", async (req, res) => {
   try {
-    const { minLng, minLat, maxLng, maxLat } = req.query;
+    let { minLng, minLat, maxLng, maxLat } = req.query;
+
+    // Convert to numbers
+    minLng = parseFloat(minLng);
+    minLat = parseFloat(minLat);
+    maxLng = parseFloat(maxLng);
+    maxLat = parseFloat(maxLat);
+
+    // Validate
+    if (
+      [minLng, minLat, maxLng, maxLat].some(v => Number.isNaN(v))
+    ) {
+      return res.status(400).json({ error: "Invalid bounding box" });
+    }
 
     const result = await pool.query(
-      `
-      SELECT
-        ogc_fid,
-        villagenameenglish,
-        districtnameenglish,
-        statenameenglish,
-        ST_AsGeoJSON(wkb_geometry) AS geometry
-      FROM tamil_nadu_village
-      WHERE ST_Intersects(
-        wkb_geometry,
-        ST_MakeEnvelope($1, $2, $3, $4, 4326)
-      )
-      LIMIT 5000
-      `,
-      [minLng, minLat, maxLng, maxLat]
-    );
+  `
+  SELECT
+    villagenameenglish,
+    districtnameenglish,
+    statenameenglish,
+    ST_AsGeoJSON(geom) AS geometry
+  FROM india_villages
+  WHERE geom && ST_MakeEnvelope($1, $2, $3, $4, 4326)
+    AND ST_Intersects(
+      geom,
+      ST_MakeEnvelope($1, $2, $3, $4, 4326)
+    )
+  LIMIT 5000
+  `,
+  [minLng, minLat, maxLng, maxLat]
+);
+
 
     const geojson = {
       type: "FeatureCollection",
@@ -138,9 +221,10 @@ app.get("/locations", async (req, res) => {
 
     res.json(geojson);
   } catch (err) {
-    console.error(err);
+    console.error("LOCATIONS ERROR:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
+
 
 app.listen(5000, () => console.log("Server running on port 5000"));
