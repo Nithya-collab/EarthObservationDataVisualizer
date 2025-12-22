@@ -206,6 +206,8 @@ import BrightnessOpacityControl from "./components/ui/controlles/BrightnessOpaci
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 
+import { DetailsCard } from "@/components/ui/DetailsCard";
+
 function SidebarInsetContent({
   brightness,
   opacity,
@@ -218,6 +220,7 @@ function SidebarInsetContent({
   setMouseLatLng,
 }: any) {
   const { open, isMobile } = useSidebar();
+  const [selectedFeature, setSelectedFeature] = useState<any>(null);
 
   function toDegree(value: number, type: "lat" | "lng") {
     const abs = Math.abs(value).toFixed(4);
@@ -253,7 +256,26 @@ function SidebarInsetContent({
             category: category.join(","),
           }}
           onMouseMove={setMouseLatLng}
+          onFeatureClick={(feature, latlng) => {
+            console.log("Selected:", feature);
+            setSelectedFeature({
+              State: feature.properties.state,
+              Pincode: feature.properties.pincode, // Will be undefined/null
+              Village: feature.properties.village,
+              City: feature.properties.city,
+              Latitude: latlng?.lat.toFixed(4),
+              Longitude: latlng?.lng.toFixed(4)
+            });
+          }}
         />
+
+        {selectedFeature && (
+          <DetailsCard
+            title="Geographical Details"
+            data={selectedFeature}
+            onClose={() => setSelectedFeature(null)}
+          />
+        )}
 
         {/* LAT / LNG CARD */}
         <Card
