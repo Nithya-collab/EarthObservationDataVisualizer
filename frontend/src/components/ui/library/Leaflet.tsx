@@ -26,7 +26,7 @@ const Leaflet: React.FC<{
   const location = useLocation();
 
   function toDegree(value: number, type: "lat" | "lng") {
-    const abs = Math.abs(value).toFixed(4);
+    const abs = Math.abs(value).toFixed(5);
     const direction =
       type === "lat" ? (value >= 0 ? "N" : "S") : value >= 0 ? "E" : "W";
     return `${abs}° ${direction}`;
