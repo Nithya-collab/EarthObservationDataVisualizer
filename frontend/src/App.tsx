@@ -215,6 +215,7 @@ function SidebarInsetContent({
   range,
   category,
   mouseLatLng,
+  setMouseLatLng,
 }: any) {
   const { open, isMobile } = useSidebar();
 
@@ -251,7 +252,7 @@ function SidebarInsetContent({
             end: range[1],
             category: category.join(","),
           }}
-          // onMouseMove={setMouseLatLng}
+          onMouseMove={setMouseLatLng}
         />
 
         {/* LAT / LNG CARD */}
@@ -334,7 +335,7 @@ export default function Page() {
   const [opacity, setOpacity] = useState(100);
 
   const [districts, setDistricts] = useState<string[]>([]);
-  const [range, setRange] = useState<[number, number]>([2025, 2027]);
+  const [range, setRange] = useState<[number, number]>([2023, 2025]);
   const [category, setCategory] = useState<string[]>([]);
 
   const [mouseLatLng, setMouseLatLng] = useState<{

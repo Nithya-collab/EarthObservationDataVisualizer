@@ -9,7 +9,8 @@ const Leaflet: React.FC<{
   brightness: number;
   opacity: number;
   filters?: any;
-}> = ({ brightness, opacity, filters }) => {
+  onMouseMove?: (latlng: { lat: number; lng: number }) => void;
+}> = ({ brightness, opacity, filters, onMouseMove }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
 
@@ -19,15 +20,15 @@ const Leaflet: React.FC<{
 
   const { theme } = useTheme();
   const location = useLocation();
-const indiaBounds = L.latLngBounds(
-  [6.4627, 68.1097],   // South-West (India)
-  [35.5133, 97.3956]  // North-East (India)
-);
+  const indiaBounds = L.latLngBounds(
+    [6.4627, 68.1097],   // South-West (India)
+    [35.5133, 97.3956]  // North-East (India)
+  );
 
   // ---------------- FETCH GEOJSON ----------------
   const fetchGeoJson = async (filters: any) => {
     if (!mapRef.current) return;
-const bounds = mapRef.current.getBounds();
+    const bounds = mapRef.current.getBounds();
 
     const query = new URLSearchParams({
       district: filters?.district || "",
@@ -35,9 +36,9 @@ const bounds = mapRef.current.getBounds();
       end: filters?.end || "",
       category: filters?.category || "",
       minLng: bounds.getWest().toString(),
-    minLat: bounds.getSouth().toString(),
-    maxLng: bounds.getEast().toString(),
-    maxLat: bounds.getNorth().toString()
+      minLat: bounds.getSouth().toString(),
+      maxLng: bounds.getEast().toString(),
+      maxLat: bounds.getNorth().toString()
     }).toString();
 
     const res = await fetch(`http://localhost:5000/locations?${query}`);
@@ -66,7 +67,7 @@ const bounds = mapRef.current.getBounds();
   //         fillOpacity: 1,
   //         stroke: false,
   //       }).addTo(pointLayerRef.current!);
-        
+
   //     };
 
   //     if (geom.type === "Polygon") {
@@ -87,35 +88,35 @@ const bounds = mapRef.current.getBounds();
 
 
   const drawPoints = (geojson: FeatureCollection) => {
-  if (!mapRef.current || !pointLayerRef.current) return;
+    if (!mapRef.current || !pointLayerRef.current) return;
 
-  const zoom = mapRef.current.getZoom();
-  pointLayerRef.current.clearLayers();
+    const zoom = mapRef.current.getZoom();
+    pointLayerRef.current.clearLayers();
 
-  // performance: don't draw when zoomed out
-  if (zoom < 10) return;
+    // performance: don't draw when zoomed out
+    if (zoom < 10) return;
 
-  geojson.features.forEach((feature: any) => {
-    if (!feature.geometry || feature.geometry.type !== "Point") return;
+    geojson.features.forEach((feature: any) => {
+      if (!feature.geometry || feature.geometry.type !== "Point") return;
 
-    const [lng, lat] = feature.geometry.coordinates;
+      const [lng, lat] = feature.geometry.coordinates;
 
-    L.circleMarker([lat, lng], {
-      radius: zoom >= 12 ? 3 : 1.5,
-      fillColor: "#820b0bff",
-      fillOpacity: 0.9,
-      stroke: false,
-    })
-      .bindTooltip(
-        `
+      L.circleMarker([lat, lng], {
+        radius: zoom >= 12 ? 3 : 1.5,
+        fillColor: "#820b0bff",
+        fillOpacity: 0.9,
+        stroke: false,
+      })
+        .bindTooltip(
+          `
         <b>${feature.properties.village}</b><br/>
         ${feature.properties.district}
         `,
-        { sticky: true }
-      )
-      .addTo(pointLayerRef.current!);
-  });
-};
+          { sticky: true }
+        )
+        .addTo(pointLayerRef.current!);
+    });
+  };
 
 
   // ---------------- MAP INIT ----------------
@@ -123,10 +124,10 @@ const bounds = mapRef.current.getBounds();
     if (!mapContainerRef.current || mapRef.current) return;
 
     const map = L.map(mapContainerRef.current, {
-        minZoom: 4,        // 👈 prevent zooming too far out
-  maxZoom: 18,
-  maxBounds: indiaBounds,
-  maxBoundsViscosity: 1.0, 
+      minZoom: 4,        // 👈 prevent zooming too far out
+      maxZoom: 18,
+      maxBounds: indiaBounds,
+      maxBoundsViscosity: 1.0,
       // zoomControl: false,
     }).setView([20, 78], 5);
 
@@ -154,6 +155,13 @@ const bounds = mapRef.current.getBounds();
 
     map.on("zoomend", () => fetchGeoJson(filters || {}));
 
+    // Add mousemove listener
+    map.on("mousemove", (e) => {
+      if (onMouseMove) {
+        onMouseMove({ lat: e.latlng.lat, lng: e.latlng.lng });
+      }
+    });
+
     fetchGeoJson(filters || {});
 
     return () => {
@@ -168,18 +176,18 @@ const bounds = mapRef.current.getBounds();
     darkTileRef.current?.setOpacity(opacity / 100);
   }, [opacity]);
 
- 
- useEffect(() => {
-  const lightContainer = lightTileRef.current?.getContainer();
-  const darkContainer = darkTileRef.current?.getContainer();
 
-  if (lightContainer) lightContainer.style.filter = `brightness(${brightness}%)`;
-  if (darkContainer) darkContainer.style.filter = `brightness(${brightness}%)`;
-}, [brightness, theme]);
+  useEffect(() => {
+    const lightContainer = lightTileRef.current?.getContainer();
+    const darkContainer = darkTileRef.current?.getContainer();
+
+    if (lightContainer) lightContainer.style.filter = `brightness(${brightness}%)`;
+    if (darkContainer) darkContainer.style.filter = `brightness(${brightness}%)`;
+  }, [brightness, theme]);
 
 
 
-  
+
   // ---------------- THEME ----------------
   useEffect(() => {
     if (!mapRef.current) return;

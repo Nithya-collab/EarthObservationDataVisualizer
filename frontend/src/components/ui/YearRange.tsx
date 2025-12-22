@@ -11,16 +11,16 @@ import {
 } from "@/components/ui/select";
 
 export default function YearRangeSelect({
-  initialStart = 2025,
-  initialEnd = 2027,
+  initialStart = 2023,
+  initialEnd = 2025,
   onChange,
 }: {
   initialStart?: number;
   initialEnd?: number;
   onChange?: (range: [number, number]) => void;
 }) {
-//   const YEARS = [2025, 2026, 2027, 2028, 2029, 2030, 2031];
-const YEARS = Array.from({ length: 3000 - 2025 + 1 }, (_, i) => 2025 + i);
+  /* Show 2023 to 2030, but only 2023-2025 are selectable */
+  const YEARS = Array.from({ length: 2030 - 2023 + 1 }, (_, i) => 2023 + i);
 
   const [start, setStart] = useState<number>(initialStart);
   const [end, setEnd] = useState<number>(initialEnd);
@@ -35,6 +35,8 @@ const YEARS = Array.from({ length: 3000 - 2025 + 1 }, (_, i) => 2025 + i);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [start, end]);
 
+  const isYearDisabled = (y: number) => y < 2023 || y > 2025;
+
   return (
     <div className="flex items-center space-x-3 mt-5">
       <div className="flex flex-col">
@@ -46,7 +48,12 @@ const YEARS = Array.from({ length: 3000 - 2025 + 1 }, (_, i) => 2025 + i);
           <SelectContent className="max-h-48 overflow-y-auto">
             <SelectGroup>
               {YEARS.map((y) => (
-                <SelectItem key={y} value={String(y)}>
+                <SelectItem
+                  key={y}
+                  value={String(y)}
+                  disabled={isYearDisabled(y)}
+                  className={isYearDisabled(y) ? "opacity-50" : ""}
+                >
                   {y}
                 </SelectItem>
               ))}
@@ -67,9 +74,9 @@ const YEARS = Array.from({ length: 3000 - 2025 + 1 }, (_, i) => 2025 + i);
                 <SelectItem
                   key={y}
                   value={String(y)}
-                  // optionally disable items that are less than start
-                  aria-disabled={y < start}
-                  className={y < start ? "opacity-50 pointer-events-none" : ""}
+                  // Logic: disable if outside 2023-2025 OR if it's smaller than start year
+                  disabled={isYearDisabled(y) || y < start}
+                  className={(isYearDisabled(y) || y < start) ? "opacity-50" : ""}
                 >
                   {y}
                 </SelectItem>
