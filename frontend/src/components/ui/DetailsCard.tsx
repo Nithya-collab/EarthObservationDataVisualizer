@@ -11,7 +11,7 @@ interface DetailsCardProps {
 
 export function DetailsCard({ title, data, onClose }: DetailsCardProps) {
     return (
-        <Card className="absolute top-20 right-4 z-50 w-80 shadow-xl bg-white/90 dark:bg-black/90 backdrop-blur-sm border-l-4 border-l-primary">
+        <Card className="absolute top-32 right-4 z-50 w-80 shadow-xl bg-white/90 dark:bg-black/90 backdrop-blur-sm border-l-4 border-l-primary">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                     {title}
