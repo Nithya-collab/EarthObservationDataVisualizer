@@ -161,35 +161,13 @@
 //         districts={districts}
 //         range={range}
 //         category={category}
-//          mouseLatLng={mouseLatLng}          
+//          mouseLatLng={mouseLatLng}
 //         setMouseLatLng={setMouseLatLng}
 //       />
 //     </SidebarProvider>
 
-
 //   )
 // }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 import { AppSidebar } from "@/components/ui/sidebar/app-sidebar";
 import { Separator } from "@/components/ui/separator";
@@ -204,7 +182,6 @@ import { ModeToggle } from "./components/ui/mode-toggle";
 import { cn } from "./lib/utils";
 import BrightnessOpacityControl from "./components/ui/controlles/BrightnessOpacityControl";
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 
 function SidebarInsetContent({
   brightness,
@@ -214,17 +191,8 @@ function SidebarInsetContent({
   districts,
   range,
   category,
-  mouseLatLng,
-  setMouseLatLng,
 }: any) {
   const { open, isMobile } = useSidebar();
-
-  function toDegree(value: number, type: "lat" | "lng") {
-    const abs = Math.abs(value).toFixed(4);
-    const direction =
-      type === "lat" ? (value >= 0 ? "N" : "S") : value >= 0 ? "E" : "W";
-    return `${abs}° ${direction}`;
-  }
 
   return (
     <SidebarInset>
@@ -241,7 +209,6 @@ function SidebarInsetContent({
 
       {/* MAP + OVERLAYS WRAPPER */}
       <div className="relative flex-1 h-screen">
-
         {/* MAP */}
         <Leaflet
           brightness={brightness}
@@ -252,34 +219,7 @@ function SidebarInsetContent({
             end: range[1],
             category: category.join(","),
           }}
-          // onMouseMove={setMouseLatLng}
         />
-
-        {/* LAT / LNG CARD */}
-        <Card
-          className="
-            absolute
-            top-4
-            left-1/2
-            -translate-x-1/2
-            z-50
-            w-[300px]
-            bg-card/80
-            backdrop-blur-sm
-            shadow-xl
-          "
-        >
-          <CardContent className="flex justify-center gap-4 text-sm">
-            <p>
-              lat:{" "}
-              {mouseLatLng ? toDegree(mouseLatLng.lat, "lat") : "--"}
-            </p>
-            <p>
-              lng:{" "}
-              {mouseLatLng ? toDegree(mouseLatLng.lng, "lng") : "--"}
-            </p>
-          </CardContent>
-        </Card>
 
         {/* LEGEND */}
         <Legend className="bg-white/60 dark:bg-black/60" />
@@ -338,11 +278,6 @@ export default function Page() {
   const [range, setRange] = useState<[number, number]>([2025, 2027]);
   const [category, setCategory] = useState<string[]>([]);
 
-  const [mouseLatLng, setMouseLatLng] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
-
   return (
     <SidebarProvider>
       <AppSidebar
@@ -362,8 +297,6 @@ export default function Page() {
         districts={districts}
         range={range}
         category={category}
-        mouseLatLng={mouseLatLng}
-        setMouseLatLng={setMouseLatLng}
       />
     </SidebarProvider>
   );
