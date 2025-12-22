@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import BrightnessOpacityControl from "../controlles/BrightnessOpacityControl"
 
 
 // This is sample data.
@@ -118,6 +119,10 @@ export function AppSidebar({
   setRange,
   category,
   setCategory,
+   brightness,
+  opacity,
+  setBrightness,
+  setOpacity,
   ...props
 }: any) {
 
@@ -159,6 +164,16 @@ export function AppSidebar({
       </SidebarHeader>
 
       <hr className="mt-5 mb-5 text-black bg-gray-500"></hr>
+
+
+      <div>
+          <BrightnessOpacityControl
+            brightness={brightness}
+            opacity={opacity}
+            onBrightnessChange={setBrightness}
+            onOpacityChange={setOpacity}
+          />
+        </div>
 
       <SidebarContent>
         <SidebarGroup>
