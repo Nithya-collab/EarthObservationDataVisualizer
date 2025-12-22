@@ -295,7 +295,7 @@ function SidebarInsetContent({
         </div>
 
         {/* MODE TOGGLE */}
-        <ModeToggle className="absolute top-4 right-4 z-50 bg-white/60 dark:bg-black/60" />
+        <ModeToggle className="absolute top-4 right-14 z-50 bg-white/60 dark:bg-black/60" />
       </div>
     </SidebarInset>
   );

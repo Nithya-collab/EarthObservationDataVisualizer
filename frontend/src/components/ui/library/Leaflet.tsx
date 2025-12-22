@@ -89,7 +89,7 @@ const bounds = mapRef.current.getBounds();
   pointLayerRef.current.clearLayers();
 
   // performance: don't draw when zoomed out
-  if (zoom < 8) return;
+  if (zoom < 10) return;
 
   geojson.features.forEach((feature: any) => {
     if (!feature.geometry || feature.geometry.type !== "Point") return;
@@ -98,7 +98,7 @@ const bounds = mapRef.current.getBounds();
 
     L.circleMarker([lat, lng], {
       radius: zoom >= 12 ? 3 : 1.5,
-      fillColor: "#ff0000",
+      fillColor: "#820b0bff",
       fillOpacity: 0.9,
       stroke: false,
     })
@@ -161,11 +161,21 @@ const bounds = mapRef.current.getBounds();
   }, [opacity]);
 
   // ---------------- BRIGHTNESS ----------------
-  useEffect(() => {
-    const pane = document.querySelector(".leaflet-tile-pane") as HTMLElement;
-    if (pane) pane.style.filter = `brightness(${brightness}%)`;
-  }, [brightness]);
+  // useEffect(() => {
+  //   const pane = document.querySelector(".leaflet-tile-pane") as HTMLElement;
+  //   if (pane) pane.style.filter = `brightness(${brightness}%)`;
+  // }, [brightness]);
+ useEffect(() => {
+  const lightContainer = lightTileRef.current?.getContainer();
+  const darkContainer = darkTileRef.current?.getContainer();
 
+  if (lightContainer) lightContainer.style.filter = `brightness(${brightness}%)`;
+  if (darkContainer) darkContainer.style.filter = `brightness(${brightness}%)`;
+}, [brightness, theme]);
+
+
+
+  
   // ---------------- THEME ----------------
   useEffect(() => {
     if (!mapRef.current) return;
