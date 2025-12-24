@@ -74,7 +74,7 @@ const data = {
         {
           title: "Schools",
           url: "#",
-        },
+        }
       ],
     },
     {
