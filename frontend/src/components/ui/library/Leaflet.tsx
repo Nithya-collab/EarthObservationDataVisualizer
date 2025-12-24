@@ -127,18 +127,44 @@ const Leaflet: React.FC<{
 
       const [lng, lat] = feature.geometry.coordinates;
 
-      L.circleMarker([lat, lng], {
-        radius: zoom >= 12 ? 3 : 1.5,
-        fillColor: "#820b0bff",
-        fillOpacity: 0.9,
+      const initialRadius = zoom >= 12 ? 3 : 1.5;
+      const initialColor = "#820b0bff";
+      const initialFillOpacity = 0.9;
+
+      const marker = L.circleMarker([lat, lng], {
+        radius: initialRadius,
+        fillColor: initialColor,
+        fillOpacity: initialFillOpacity,
         stroke: false,
-      })
-        .on("mouseover", (e) => {
-          if (onFeatureHover) {
-            onFeatureHover(feature, e.latlng);
-          }
-        })
-        .addTo(pointLayerRef.current!);
+      });
+
+      marker.on("mouseover", (e) => {
+        // Visual feedback
+        marker.setStyle({
+          radius: initialRadius * 2, // Make it bigger
+          fillColor: "#ff0000",      // Brighter red
+          fillOpacity: 1,
+          stroke: true,              // Add border
+          color: "white",
+          weight: 2
+        });
+
+        if (onFeatureHover) {
+          onFeatureHover(feature, e.latlng);
+        }
+      });
+
+      marker.on("mouseout", () => {
+        // Reset style
+        marker.setStyle({
+          radius: initialRadius,
+          fillColor: initialColor,
+          fillOpacity: initialFillOpacity,
+          stroke: false
+        });
+      });
+
+      marker.addTo(pointLayerRef.current!);
     });
   };
 
