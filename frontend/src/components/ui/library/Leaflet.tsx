@@ -19,6 +19,9 @@ const Leaflet: React.FC<{
   const lightTileRef = useRef<L.TileLayer | null>(null);
   const darkTileRef = useRef<L.TileLayer | null>(null);
   const pointLayerRef = useRef<L.LayerGroup | null>(null);
+  const populationLayerRef = useRef<L.LayerGroup | null>(null);
+  const stateLayerRef = useRef<L.GeoJSON | null>(null);
+  const populationDataCache = useRef<FeatureCollection | null>(null);
   const filtersRef = useRef(filters);
 
   // Keep filtersRef in sync with props
@@ -43,34 +46,73 @@ const Leaflet: React.FC<{
     return "#" + "00000".substring(0, 6 - c.length) + c;
   };
 
+  const getDensityColor = (d: number) => {
+    return d > 1000 ? '#800026' :
+      d > 500 ? '#BD0026' :
+        d > 200 ? '#E31A1C' :
+          d > 100 ? '#FC4E2A' :
+            d > 50 ? '#FD8D3C' :
+              d > 20 ? '#FEB24C' :
+                d > 10 ? '#FED976' :
+                  '#FFEDA0';
+  };
+
   // ---------------- FETCH GEOJSON ----------------
-  const fetchGeoJson = async (filters: any) => {
+  const fetchGeoJson = async (filters: any, isZoomString: string = "false") => {
     if (!mapRef.current) return;
+    const isZoom = isZoomString === "true";
 
     // Check if "Villages" is selected
     const categories = filters?.category ? filters.category.split(",") : [];
-    if (!categories.includes("Villages")) {
-      pointLayerRef.current?.clearLayers();
-      return;
-    }
+
+    // REMOVED EARLY RETURN TO ALLOW OTHER CATEGORIES TO LOAD independently
 
     const bounds = mapRef.current.getBounds();
 
-    const query = new URLSearchParams({
-      district: filters?.district || "",
-      start: filters?.start || "",
-      end: filters?.end || "",
-      category: filters?.category || "",
-      minLng: bounds.getWest().toString(),
-      minLat: bounds.getSouth().toString(),
-      maxLng: bounds.getEast().toString(),
-      maxLat: bounds.getNorth().toString()
-    }).toString();
+    // 1. Handle Villages
+    if (categories.includes("Villages")) {
+      const query = new URLSearchParams({
+        // ... existing params for villages ...
+        district: filters?.district || "",
+        start: filters?.start || "",
+        end: filters?.end || "",
+        category: filters?.category || "",
+        minLng: bounds.getWest().toString(),
+        minLat: bounds.getSouth().toString(),
+        maxLng: bounds.getEast().toString(),
+        maxLat: bounds.getNorth().toString()
+      }).toString();
 
-    const res = await fetch(`http://localhost:5000/locations?${query}`);
-    const data: FeatureCollection = await res.json();
+      fetch(`http://localhost:5000/locations?${query}`)
+        .then(res => res.json())
+        .then((data: FeatureCollection) => drawPoints(data))
+        .catch(err => console.error(err));
+    } else {
+      pointLayerRef.current?.clearLayers();
+    }
 
-    drawPoints(data);
+    // 2. Handle Population
+    if (categories.includes("Population")) {
+      // If zooming, don't re-render population (Leaflet handles scaling)
+      if (isZoom && populationLayerRef.current?.getLayers().length) {
+        return;
+      }
+
+      if (populationDataCache.current) {
+        // Use cache if available
+        drawPopulation(populationDataCache.current);
+      } else {
+        fetch(`http://localhost:5000/population`)
+          .then(res => res.json())
+          .then((data: FeatureCollection) => {
+            populationDataCache.current = data;
+            drawPopulation(data);
+          })
+          .catch(err => console.error(err));
+      }
+    } else {
+      populationLayerRef.current?.clearLayers();
+    }
   };
 
   // ---------------- DRAW ONLY SMALL DOTS ----------------
@@ -168,6 +210,58 @@ const Leaflet: React.FC<{
     });
   };
 
+  const drawPopulation = (geojson: FeatureCollection) => {
+    if (!mapRef.current || !populationLayerRef.current) return;
+    populationLayerRef.current.clearLayers();
+
+    // DEBUG: Check properties of the first feature
+    if (geojson.features.length > 0) {
+      console.log("Population Data Feature[0] Properties:", geojson.features[0].properties);
+    }
+
+    L.geoJSON(geojson, {
+      pane: "population", // 🔥 THIS IS THE KEY
+      style: (feature) => {
+        // Robust checking for density property
+        const density = Number(feature?.properties?.density ?? 0);
+        return {
+          fillColor: getDensityColor(density),
+          weight: 1,
+          opacity: 1,
+          color: 'white', // White borders look cleaner against filled colors
+          fillOpacity: 0.9,
+          fill: true
+        };
+      },
+      onEachFeature: (feature, layer) => {
+        // Optional: Add hover/click for population polygons too if needed
+        const pathLayer = layer as L.Path;
+        pathLayer.on({
+          mouseover: (e) => {
+            pathLayer.setStyle({
+              weight: 5,
+              color: '#666',
+              dashArray: '',
+              fillOpacity: 0.7
+            });
+            if (onFeatureHover) onFeatureHover(feature, e.latlng);
+          },
+          mouseout: (e) => {
+            pathLayer.setStyle({
+              weight: 2,
+              color: 'white',
+              dashArray: '3',
+              fillOpacity: 0.7
+            });
+          },
+          click: (e) => {
+            if (onFeatureClick) onFeatureClick(feature, e.latlng);
+          }
+        });
+      }
+    }).addTo(populationLayerRef.current!);
+  };
+
 
   // ---------------- MAP INIT ----------------
   useEffect(() => {
@@ -191,6 +285,9 @@ const Leaflet: React.FC<{
     map.createPane("states");
     map.getPane("states")!.style.zIndex = "300";
 
+    map.createPane("population");
+    map.getPane("population")!.style.zIndex = "450"; // ABOVE everything (default overlay is 400)
+
     lightTileRef.current = L.tileLayer(
       "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       { pane: "tiles", opacity: opacity / 100 }
@@ -207,7 +304,7 @@ const Leaflet: React.FC<{
     fetch("http://localhost:5000/states")
       .then(res => res.json())
       .then((data: FeatureCollection) => {
-        L.geoJSON(data, {
+        const layer = L.geoJSON(data, {
           pane: "states",
           style: (feature) => {
             const name = feature?.properties?.state || "";
@@ -227,14 +324,39 @@ const Leaflet: React.FC<{
                 pathLayer.setStyle({ weight: 3, fillOpacity: 0.6 });
               },
               mouseover: () => {
+                if (filtersRef.current?.category?.includes("Population")) return;
                 pathLayer.setStyle({ fillOpacity: 0.5 });
               },
               mouseout: () => {
-                pathLayer.setStyle({ weight: 1, fillOpacity: 0.3 });
+                // We need to revert to the correct style based on mode
+                // A simple revert might be tricky if we don't know the mode here.
+                // But updateStateLayerStyle handles "global" mode.
+                // On mouseout, let's just re-run the global style updater for this layer or all?
+                // Easiest is to trigger a style reset for this layer
+                const isPopulation = filtersRef.current?.category?.includes("Population");
+                const name = feature?.properties?.state || "";
+
+                if (isPopulation) {
+                  pathLayer.setStyle({
+                    fillOpacity: 0,
+                    opacity: 0,
+                    weight: 0
+                  });
+                } else {
+                  pathLayer.setStyle({
+                    weight: 1,
+                    fillOpacity: 0.3,
+                    color: getStateColor(name),
+                    fillColor: getStateColor(name)
+                  });
+                }
               }
             });
           }
         }).addTo(map);
+
+        stateLayerRef.current = layer as L.GeoJSON;
+        updateStateLayerStyle(); // Apply initial checks
       })
       .catch(err => console.error("Failed to fetch states:", err));
 
@@ -242,8 +364,9 @@ const Leaflet: React.FC<{
     L.control.zoom({ position: "topright" }).addTo(map);
 
     pointLayerRef.current = L.layerGroup().addTo(map);
+    populationLayerRef.current = L.layerGroup().addTo(map);
 
-    map.on("zoomend", () => fetchGeoJson(filtersRef.current || {}));
+    map.on("zoomend", () => fetchGeoJson(filtersRef.current || {}, "true"));
 
     // Add mousemove listener
     map.on("mousemove", (e) => {
@@ -293,9 +416,39 @@ const Leaflet: React.FC<{
     }
   }, [theme]);
 
+  const updateStateLayerStyle = () => {
+    if (!stateLayerRef.current) return;
+
+    // Check if Population is active
+    const isActive = filtersRef.current?.category?.includes("Population");
+
+    stateLayerRef.current.eachLayer((layer: any) => {
+      const name = layer.feature?.properties?.state || "";
+      if (isActive) {
+        // Hide fill, maybe keep faint border
+        layer.setStyle({
+          fillOpacity: 0,
+          opacity: 0,
+          weight: 0
+        });
+      } else {
+        // Restore original colorful state style
+        layer.setStyle({
+          color: getStateColor(name),
+          weight: 1,
+          fillColor: getStateColor(name),
+          fillOpacity: 0.3,
+        });
+      }
+    });
+  };
+
   // ---------------- FILTER CHANGE ----------------
   useEffect(() => {
-    if (filters) fetchGeoJson(filters);
+    if (filters) {
+      fetchGeoJson(filters);
+      updateStateLayerStyle(); // Update styles when filters change
+    }
   }, [filters]);
 
   // ---------------- URL CHANGE ----------------

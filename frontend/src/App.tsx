@@ -316,7 +316,7 @@ function SidebarInsetContent({
         </Card>
 
         {/* LEGEND */}
-        <Legend className="bg-white/60 dark:bg-black/60" />
+        <Legend className="bg-white/60 dark:bg-black/60" activeCategories={category} />
 
         {/* BRIGHTNESS + OPACITY */}
         {/* <div className="absolute top-1/2 right-4 z-50 -translate-y-1/2">
@@ -335,7 +335,29 @@ function SidebarInsetContent({
   );
 }
 
-function Legend({ className }: React.ComponentProps<"div">) {
+function Legend({ className, activeCategories = [] }: { className?: string, activeCategories?: string[] }) {
+  if (activeCategories.includes("Population")) {
+    return (
+      <div
+        id="legend"
+        className={cn(
+          className,
+          "absolute bottom-8 right-8 z-50 backdrop-blur-sm shadow-xl px-4 py-4 rounded-lg space-y-2 text-xs"
+        )}
+      >
+        <h2 className="font-semibold text-sm mb-2">Population Density (per km²)</h2>
+        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#800026]"></div><span>&gt; 1000</span></div>
+        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#BD0026]"></div><span>500 - 1000</span></div>
+        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#E31A1C]"></div><span>200 - 500</span></div>
+        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#FC4E2A]"></div><span>100 - 200</span></div>
+        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#FD8D3C]"></div><span>50 - 100</span></div>
+        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#FEB24C]"></div><span>20 - 50</span></div>
+        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#FED976]"></div><span>10 - 20</span></div>
+        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#FFEDA0]"></div><span>&lt; 10</span></div>
+      </div>
+    )
+  }
+
   return (
     <div
       id="legend"

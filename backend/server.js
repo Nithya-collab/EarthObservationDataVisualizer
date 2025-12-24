@@ -252,4 +252,41 @@ app.get("/states", async (req, res) => {
 });
 
 
+// Endpoint to get District-wise Population
+app.get("/population", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        district,
+        population,
+        population_density,
+        area_km2,
+        ST_AsGeoJSON(ST_Transform(geom, 4326)) AS geometry
+      FROM district_wise_population
+    `);
+    console.log("Population rows fetched:", result.rows.length);
+    if (result.rows.length > 0) {
+      console.log("Sample Population Row:", result.rows[0]);
+    }
+
+    const geojson = {
+      type: "FeatureCollection",
+      features: result.rows.map(row => ({
+        type: "Feature",
+        geometry: JSON.parse(row.geometry),
+        properties: {
+          district: row.district,
+          population: row.population,
+          density: row.population_density,
+          area: row.area_km2
+        }
+      }))
+    };
+    res.json(geojson);
+  } catch (err) {
+    console.error("POPULATION ERROR:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 app.listen(5000, () => console.log("Server running on port 5000"));
