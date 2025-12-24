@@ -257,11 +257,23 @@ function SidebarInsetContent({
           }}
           onMouseMove={setMouseLatLng}
           onFeatureClick={(feature, latlng) => {
-            console.log("Selected:", feature);
+            console.log("Selected (Click):", feature);
             setSelectedFeature({
               State: feature.properties.state,
-              Pincode: feature.properties.pincode, // Will be undefined/null
+              Pincode: feature.properties.pincode,
               Village: feature.properties.village,
+              City: feature.properties.city,
+              Latitude: latlng?.lat.toFixed(4),
+              Longitude: latlng?.lng.toFixed(4)
+            });
+          }}
+          onFeatureHover={(feature, latlng) => {
+            console.log("Selected (Hover):", feature);
+            setSelectedFeature({
+              State: feature.properties.state,
+              Pincode: feature.properties.pincode,
+              Village: feature.properties.village,
+              District: feature.properties.district, // Added District as it's available in village data
               City: feature.properties.city,
               Latitude: latlng?.lat.toFixed(4),
               Longitude: latlng?.lng.toFixed(4)

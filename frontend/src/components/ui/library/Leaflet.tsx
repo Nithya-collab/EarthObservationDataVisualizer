@@ -11,7 +11,8 @@ const Leaflet: React.FC<{
   filters?: any;
   onMouseMove?: (latlng: { lat: number; lng: number }) => void;
   onFeatureClick?: (feature: any, latlng?: L.LatLng) => void;
-}> = ({ brightness, opacity, filters, onMouseMove, onFeatureClick }) => {
+  onFeatureHover?: (feature: any, latlng?: L.LatLng) => void;
+}> = ({ brightness, opacity, filters, onMouseMove, onFeatureClick, onFeatureHover }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
 
@@ -132,13 +133,11 @@ const Leaflet: React.FC<{
         fillOpacity: 0.9,
         stroke: false,
       })
-        .bindTooltip(
-          `
-        <b>${feature.properties.village}</b><br/>
-        ${feature.properties.district}
-        `,
-          { sticky: true }
-        )
+        .on("mouseover", (e) => {
+          if (onFeatureHover) {
+            onFeatureHover(feature, e.latlng);
+          }
+        })
         .addTo(pointLayerRef.current!);
     });
   };
