@@ -18,6 +18,12 @@ const Leaflet: React.FC<{
   const lightTileRef = useRef<L.TileLayer | null>(null);
   const darkTileRef = useRef<L.TileLayer | null>(null);
   const pointLayerRef = useRef<L.LayerGroup | null>(null);
+  const filtersRef = useRef(filters);
+
+  // Keep filtersRef in sync with props
+  useEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
 
   const { theme } = useTheme();
   const location = useLocation();
@@ -39,6 +45,14 @@ const Leaflet: React.FC<{
   // ---------------- FETCH GEOJSON ----------------
   const fetchGeoJson = async (filters: any) => {
     if (!mapRef.current) return;
+
+    // Check if "Villages" is selected
+    const categories = filters?.category ? filters.category.split(",") : [];
+    if (!categories.includes("Villages")) {
+      pointLayerRef.current?.clearLayers();
+      return;
+    }
+
     const bounds = mapRef.current.getBounds();
 
     const query = new URLSearchParams({
@@ -204,7 +218,7 @@ const Leaflet: React.FC<{
 
     pointLayerRef.current = L.layerGroup().addTo(map);
 
-    map.on("zoomend", () => fetchGeoJson(filters || {}));
+    map.on("zoomend", () => fetchGeoJson(filtersRef.current || {}));
 
     // Add mousemove listener
     map.on("mousemove", (e) => {
