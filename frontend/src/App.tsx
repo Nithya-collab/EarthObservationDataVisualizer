@@ -216,6 +216,7 @@ function SidebarInsetContent({
   districts,
   range,
   category,
+  hospitalSearch,
   mouseLatLng,
   setMouseLatLng,
 }: any) {
@@ -254,18 +255,50 @@ function SidebarInsetContent({
             start: range[0],
             end: range[1],
             category: category.join(","),
+            hospital: hospitalSearch // Pass the search term
           }}
           onMouseMove={setMouseLatLng}
           onFeatureClick={(feature, latlng) => {
-            console.log("Selected:", feature);
-            setSelectedFeature({
-              State: feature.properties.state,
-              Pincode: feature.properties.pincode, // Will be undefined/null
+            console.log("Selected (Click):", feature);
+
+            const baseDetails = {
+              "Category": category.join(","),
+              State: feature.properties.state || feature.properties.State,
+              Pincode: feature.properties.pincode || feature.properties.Pincode,
               Village: feature.properties.village,
               City: feature.properties.city,
               Latitude: latlng?.lat.toFixed(4),
               Longitude: latlng?.lng.toFixed(4)
-            });
+            };
+
+            const hospitalDetails = feature.properties.Hospital_Name ? {
+              "Hospital Name": feature.properties.Hospital_Name,
+              "Hospital Category": feature.properties.Hospital_Category,
+              "Care Type": feature.properties.Hospital_Care_Type,
+            } : {};
+
+            setSelectedFeature({ ...baseDetails, ...hospitalDetails });
+          }}
+          onFeatureHover={(feature, latlng) => {
+            console.log("Selected (Hover):", feature);
+
+            const baseDetails = {
+              "Category": category.join(","),
+              State: feature.properties.state || feature.properties.State,
+              Pincode: feature.properties.pincode || feature.properties.Pincode,
+              Village: feature.properties.village,
+              District: feature.properties.district || feature.properties.District,
+              City: feature.properties.city,
+              Latitude: latlng?.lat.toFixed(4),
+              Longitude: latlng?.lng.toFixed(4)
+            };
+
+            const hospitalDetails = feature.properties.Hospital_Name ? {
+              "Hospital Name": feature.properties.Hospital_Name,
+              "Hospital Category": feature.properties.Hospital_Category,
+            } : {};
+
+            setSelectedFeature({ ...baseDetails, ...hospitalDetails });
           }}
         />
 
@@ -304,7 +337,7 @@ function SidebarInsetContent({
         </Card>
 
         {/* LEGEND */}
-        <Legend className="bg-white/60 dark:bg-black/60" />
+        <Legend className="bg-white/60 dark:bg-black/60" activeCategories={category} />
 
         {/* BRIGHTNESS + OPACITY */}
         {/* <div className="absolute top-1/2 right-4 z-50 -translate-y-1/2">
@@ -323,33 +356,30 @@ function SidebarInsetContent({
   );
 }
 
-function Legend({ className }: React.ComponentProps<"div">) {
-  return (
-    <div
-      id="legend"
-      className={cn(
-        className,
-        "absolute bottom-8 right-8 z-50 backdrop-blur-sm shadow-xl px-6 py-6 rounded-lg space-y-4"
-      )}
-    >
-      <h2 className="font-semibold text-lg">Legend</h2>
-
-      <div className="flex items-center space-x-3">
-        <div className="w-6 h-6 bg-red-300/40 border border-white/20"></div>
-        <span>Low</span>
+function Legend({ className, activeCategories = [] }: { className?: string, activeCategories?: string[] }) {
+  if (activeCategories.includes("Population")) {
+    return (
+      <div
+        id="legend"
+        className={cn(
+          className,
+          "absolute bottom-8 right-8 z-50 backdrop-blur-sm shadow-xl px-4 py-4 rounded-lg space-y-2 text-xs"
+        )}
+      >
+        <h2 className="font-semibold text-sm mb-2">Population Density (per km²)</h2>
+        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#800026]"></div><span>&gt; 1000</span></div>
+        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#BD0026]"></div><span>500 - 1000</span></div>
+        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#E31A1C]"></div><span>200 - 500</span></div>
+        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#FC4E2A]"></div><span>100 - 200</span></div>
+        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#FD8D3C]"></div><span>50 - 100</span></div>
+        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#FEB24C]"></div><span>20 - 50</span></div>
+        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#FED976]"></div><span>10 - 20</span></div>
+        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#FFEDA0]"></div><span>&lt; 10</span></div>
       </div>
+    )
+  }
 
-      <div className="flex items-center space-x-3">
-        <div className="w-6 h-6 bg-red-500/40 border border-white/20"></div>
-        <span>Medium</span>
-      </div>
-
-      <div className="flex items-center space-x-3">
-        <div className="w-6 h-6 bg-red-700/40 border border-white/20"></div>
-        <span>High</span>
-      </div>
-    </div>
-  );
+  return null;
 }
 
 export default function Page() {
@@ -359,6 +389,7 @@ export default function Page() {
   const [districts, setDistricts] = useState<string[]>([]);
   const [range, setRange] = useState<[number, number]>([2023, 2025]);
   const [category, setCategory] = useState<string[]>([]);
+  const [hospitalSearch, setHospitalSearch] = useState<string>("");
 
   const [mouseLatLng, setMouseLatLng] = useState<{
     lat: number;
@@ -381,6 +412,8 @@ export default function Page() {
         opacity={opacity}
         setBrightness={setBrightness}
         setOpacity={setOpacity}
+        hospitalSearch={hospitalSearch}
+        setHospitalSearch={setHospitalSearch}
 
       />
 
@@ -392,6 +425,7 @@ export default function Page() {
         districts={districts}
         range={range}
         category={category}
+        hospitalSearch={hospitalSearch}
         mouseLatLng={mouseLatLng}
         setMouseLatLng={setMouseLatLng}
       />

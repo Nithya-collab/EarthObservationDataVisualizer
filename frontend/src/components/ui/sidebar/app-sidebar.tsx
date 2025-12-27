@@ -74,7 +74,7 @@ const data = {
         {
           title: "Schools",
           url: "#",
-        },
+        }
       ],
     },
     {
@@ -82,7 +82,7 @@ const data = {
       url: "#",
       items: [
         {
-          title: "Hospital",
+          title: "Hospitals",
           url: "#",
         },
         {
@@ -119,10 +119,12 @@ export function AppSidebar({
   setRange,
   category,
   setCategory,
-   brightness,
+  brightness,
   opacity,
   setBrightness,
   setOpacity,
+  hospitalSearch,
+  setHospitalSearch,
   ...props
 }: any) {
 
@@ -158,6 +160,8 @@ export function AppSidebar({
           setRange={setRange}
           category={category}
           setCategory={setCategory}
+          hospitalSearch={hospitalSearch}
+          setHospitalSearch={setHospitalSearch}
         />
 
         {/* <YearRangeSelect/> */}
@@ -167,13 +171,13 @@ export function AppSidebar({
 
 
       <div>
-          <BrightnessOpacityControl
-            brightness={brightness}
-            opacity={opacity}
-            onBrightnessChange={setBrightness}
-            onOpacityChange={setOpacity}
-          />
-        </div>
+        <BrightnessOpacityControl
+          brightness={brightness}
+          opacity={opacity}
+          onBrightnessChange={setBrightness}
+          onOpacityChange={setOpacity}
+        />
+      </div>
 
       <SidebarContent>
         <SidebarGroup>
