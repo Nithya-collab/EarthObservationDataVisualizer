@@ -262,6 +262,7 @@ function SidebarInsetContent({
             console.log("Selected (Click):", feature);
 
             const baseDetails = {
+              "Category": category.join(","),
               State: feature.properties.state || feature.properties.State,
               Pincode: feature.properties.pincode || feature.properties.Pincode,
               Village: feature.properties.village,
@@ -272,7 +273,7 @@ function SidebarInsetContent({
 
             const hospitalDetails = feature.properties.Hospital_Name ? {
               "Hospital Name": feature.properties.Hospital_Name,
-              "Category": feature.properties.Hospital_Category,
+              "Hospital Category": feature.properties.Hospital_Category,
               "Care Type": feature.properties.Hospital_Care_Type,
             } : {};
 
@@ -282,6 +283,7 @@ function SidebarInsetContent({
             console.log("Selected (Hover):", feature);
 
             const baseDetails = {
+              "Category": category.join(","),
               State: feature.properties.state || feature.properties.State,
               Pincode: feature.properties.pincode || feature.properties.Pincode,
               Village: feature.properties.village,
@@ -293,7 +295,7 @@ function SidebarInsetContent({
 
             const hospitalDetails = feature.properties.Hospital_Name ? {
               "Hospital Name": feature.properties.Hospital_Name,
-              "Category": feature.properties.Hospital_Category,
+              "Hospital Category": feature.properties.Hospital_Category,
             } : {};
 
             setSelectedFeature({ ...baseDetails, ...hospitalDetails });
