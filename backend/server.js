@@ -264,10 +264,6 @@ app.get("/population", async (req, res) => {
         ST_AsGeoJSON(ST_Transform(geom, 4326)) AS geometry
       FROM district_wise_population
     `);
-    console.log("Population rows fetched:", result.rows.length);
-    if (result.rows.length > 0) {
-      console.log("Sample Population Row:", result.rows[0]);
-    }
 
     const geojson = {
       type: "FeatureCollection",
@@ -288,5 +284,126 @@ app.get("/population", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+
+// Endpoint to get Hospitals
+// app.get("/hospitals", async (req, res) => {
+//   try {
+//     let { minLng, minLat, maxLng, maxLat } = req.query;
+
+//     let query = `
+//       SELECT
+//         hospital_name,
+//         hospital_category,
+//         hospital_care_type,
+//         state,
+//         district,
+//         pincode,
+//         ST_AsGeoJSON(wkb_geometry) AS geometry
+//       FROM india_hospitals
+//     `;
+
+//     let params = [];
+
+//     // Optional: Use bounding box if provided
+//     if (minLng && minLat && maxLng && maxLat) {
+//       // Convert to numbers
+//       minLng = parseFloat(minLng);
+//       minLat = parseFloat(minLat);
+//       maxLng = parseFloat(maxLng);
+//       maxLat = parseFloat(maxLat);
+
+//       if (![minLng, minLat, maxLng, maxLat].some(v => Number.isNaN(v))) {
+//         query += ` WHERE wkb_geometry && ST_MakeEnvelope($1, $2, $3, $4, 4326)`;
+//         params = [minLng, minLat, maxLng, maxLat];
+//       }
+//     }
+
+//     const result = await pool.query(query, params);
+
+//     const geojson = {
+//       type: "FeatureCollection",
+//       features: result.rows.map(row => ({
+//         type: "Feature",
+//         geometry: JSON.parse(row.geometry),
+//         properties: {
+//           name: row.hospital_name,
+//           category: row.hospital_category,
+//           care_type: row.hospital_care_type,
+//           state: row.state,
+//           district: row.district,
+//           pincode: row.pincode
+//         }
+//       }))
+//     };
+//     res.json(geojson);
+//   } catch (err) {
+//     console.error("HOSPITALS ERROR:", err);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// });
+
+
+
+
+app.get("/hospitals", async (req, res) => {
+  try {
+    let { minLng, minLat, maxLng, maxLat } = req.query;
+
+    console.log("Fetching hospitals with bounds:", { minLng, minLat, maxLng, maxLat });
+
+    let query = `
+      SELECT
+        hospital_name,
+        hospital_category,
+        hospital_care_type,
+        state,
+        district,
+        pincode,
+        ST_AsGeoJSON(wkb_geometry) AS geometry
+      FROM india_hospitals
+    `;
+
+    let params = [];
+
+    // Parse and validate bounds
+    const bounds = [minLng, minLat, maxLng, maxLat].map(Number);
+    const hasValidBounds = bounds.every(v => !isNaN(v));
+
+    if (hasValidBounds) {
+      query += ` WHERE wkb_geometry && ST_MakeEnvelope($1, $2, $3, $4, 4326)`;
+      params = bounds;
+    } else {
+      query += ` LIMIT 5000`; // Safety limit if no bounds provided
+    }
+
+    const result = await pool.query(query, params);
+
+    const geojson = {
+      type: "FeatureCollection",
+      features: result.rows.map(row => ({
+        type: "Feature",
+        geometry: JSON.parse(row.geometry),
+        properties: {
+          Hospital_Name: row.hospital_name,
+          Hospital_Category: row.hospital_category,
+          Hospital_Care_Type: row.hospital_care_type,
+          State: row.state,
+          District: row.district,
+          Pincode: row.pincode
+        }
+      }))
+    };
+
+    console.log(`Returned ${geojson.features.length} hospitals`);
+    res.json(geojson);
+  } catch (err) {
+    console.error("HOSPITALS ERROR:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+
+
+
 
 app.listen(5000, () => console.log("Server running on port 5000"));

@@ -20,6 +20,7 @@ const Leaflet: React.FC<{
   const darkTileRef = useRef<L.TileLayer | null>(null);
   const pointLayerRef = useRef<L.LayerGroup | null>(null);
   const populationLayerRef = useRef<L.LayerGroup | null>(null);
+  const hospitalLayerRef = useRef<L.LayerGroup | null>(null);
   const stateLayerRef = useRef<L.GeoJSON | null>(null);
   const populationDataCache = useRef<FeatureCollection | null>(null);
   const filtersRef = useRef(filters);
@@ -110,49 +111,102 @@ const Leaflet: React.FC<{
           })
           .catch(err => console.error(err));
       }
-    } else {
+    }
+
+    else {
       populationLayerRef.current?.clearLayers();
+    }
+
+
+
+
+
+
+
+    // 3. Handle Hospitals
+    if (categories.includes("Hospitals")) {
+      const query = new URLSearchParams({
+        minLng: bounds.getWest().toString(),
+        minLat: bounds.getSouth().toString(),
+        maxLng: bounds.getEast().toString(),
+        maxLat: bounds.getNorth().toString()
+      }).toString();
+
+      console.log("Leaflet: Fetching Hospitals...");
+      fetch(`http://localhost:5000/hospitals?${query}`)
+        .then(res => res.json())
+        .then((data: FeatureCollection) => {
+          console.log("Leaflet: Hospitals data received", data.features.length);
+          drawHospitals(data);
+        })
+        .catch(err => console.error("Leaflet: Hospital fetch error", err));
+    } else {
+      hospitalLayerRef.current?.clearLayers();
     }
   };
 
-  // ---------------- DRAW ONLY SMALL DOTS ----------------
-  // const drawPoints = (geojson: FeatureCollection) => {
-  //   if (!mapRef.current || !pointLayerRef.current) return;
+  const drawHospitals = (geojson: FeatureCollection) => {
+    if (!mapRef.current || !hospitalLayerRef.current) return;
 
-  //   const zoom = mapRef.current.getZoom();
-  //   pointLayerRef.current.clearLayers();
+    const zoom = mapRef.current.getZoom();
+    hospitalLayerRef.current.clearLayers();
 
-  //   if (zoom < 10) return;
+    // Village concept: hide if zoomed out (adjust threshold as needed, 9 is a bit wider than villages)
+    if (zoom < 9) return;
 
-  //   geojson.features.forEach((feature: any) => {
-  //     const geom = feature.geometry;
-  //     if (!geom) return;
+    geojson.features.forEach((feature: any) => {
+      if (!feature.geometry || feature.geometry.type !== "Point") return;
 
-  //     const addDot = (lng: number, lat: number) => {
-  //       L.circleMarker([lat, lng], {
-  //         radius: 1,
-  //         fillColor: "#ff0000",
-  //         fillOpacity: 1,
-  //         stroke: false,
-  //       }).addTo(pointLayerRef.current!);
+      const [lng, lat] = feature.geometry.coordinates;
 
-  //     };
+      // Dynamic radius based on zoom
+      const initialRadius = zoom >= 12 ? 4 : 2;
+      const initialColor = "#00c853";
+      const initialFillOpacity = 0.9;
 
-  //     if (geom.type === "Polygon") {
-  //       geom.coordinates[0].forEach(([lng, lat]: number[]) =>
-  //         addDot(lng, lat)
-  //       );
-  //     }
+      const marker = L.circleMarker([lat, lng], {
+        pane: "population",
+        radius: initialRadius,
+        fillColor: initialColor,
+        fillOpacity: initialFillOpacity,
+        stroke: false,
+      });
 
-  //     if (geom.type === "MultiPolygon") {
-  //       geom.coordinates.forEach((poly: any) => {
-  //         poly[0].forEach(([lng, lat]: number[]) =>
-  //           addDot(lng, lat)
-  //         );
-  //       });
-  //     }
-  //   });
-  // };
+      marker.bindPopup(`
+      <strong>${feature.properties.Hospital_Name || "Hospital"}</strong><br/>
+      ${feature.properties.Hospital_Category || ""}<br/>
+      ${feature.properties.Hospital_Care_Type || ""}
+    `);
+
+      marker.on("mouseover", (e) => {
+        marker.setStyle({
+          radius: initialRadius * 1.5,
+          fillColor: "#69f0ae", // Brighter green
+          fillOpacity: 1,
+          stroke: true,
+          color: "white",
+          weight: 2
+        });
+        if (onFeatureHover) onFeatureHover(feature, e.latlng);
+      });
+
+      marker.on("click", (e) => {
+        if (onFeatureClick) onFeatureClick(feature, e.latlng);
+      });
+
+      marker.on("mouseout", () => {
+        marker.setStyle({
+          radius: initialRadius,
+          fillColor: initialColor,
+          fillOpacity: initialFillOpacity,
+          stroke: false
+        });
+      });
+
+      marker.addTo(hospitalLayerRef.current!);
+    });
+  };
+
 
 
   const drawPoints = (geojson: FeatureCollection) => {
@@ -365,6 +419,7 @@ const Leaflet: React.FC<{
 
     pointLayerRef.current = L.layerGroup().addTo(map);
     populationLayerRef.current = L.layerGroup().addTo(map);
+    hospitalLayerRef.current = L.layerGroup().addTo(map);
 
     map.on("zoomend", () => fetchGeoJson(filtersRef.current || {}, "true"));
 

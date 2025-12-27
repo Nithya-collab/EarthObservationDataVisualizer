@@ -9,6 +9,8 @@ import {
 import { CityMultiSelect } from "./CityMultiSelect";
 import { useNavigate } from "react-router-dom";
 import YearRangeSelect from "../YearRange";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 
 
@@ -45,6 +47,21 @@ export function SearchForm({
           <CityMultiSelect onChange={setDistricts} />
 
           <YearRangeSelect onChange={setRange} />
+
+          {category.includes("Hospitals") && (
+            <div className="mt-4">
+              {/* <Label htmlFor="hospital-search" className="text-xs font-semibold mb-2 block">
+                Hospital Name
+              </Label>
+              <Input
+                id="hospital-search"
+                placeholder="Search hospital..."
+                value={props.hospitalSearch}
+                onChange={(e) => props.setHospitalSearch && props.setHospitalSearch(e.target.value)}
+                className="bg-white"
+              /> */}
+            </div>
+          )}
 
         </SidebarGroupContent>
       </SidebarGroup>

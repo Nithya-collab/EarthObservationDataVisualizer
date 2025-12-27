@@ -216,6 +216,7 @@ function SidebarInsetContent({
   districts,
   range,
   category,
+  hospitalSearch,
   mouseLatLng,
   setMouseLatLng,
 }: any) {
@@ -254,30 +255,48 @@ function SidebarInsetContent({
             start: range[0],
             end: range[1],
             category: category.join(","),
+            hospital: hospitalSearch // Pass the search term
           }}
           onMouseMove={setMouseLatLng}
           onFeatureClick={(feature, latlng) => {
             console.log("Selected (Click):", feature);
-            setSelectedFeature({
-              State: feature.properties.state,
-              Pincode: feature.properties.pincode,
+
+            const baseDetails = {
+              State: feature.properties.state || feature.properties.State,
+              Pincode: feature.properties.pincode || feature.properties.Pincode,
               Village: feature.properties.village,
               City: feature.properties.city,
               Latitude: latlng?.lat.toFixed(4),
               Longitude: latlng?.lng.toFixed(4)
-            });
+            };
+
+            const hospitalDetails = feature.properties.Hospital_Name ? {
+              "Hospital Name": feature.properties.Hospital_Name,
+              "Category": feature.properties.Hospital_Category,
+              "Care Type": feature.properties.Hospital_Care_Type,
+            } : {};
+
+            setSelectedFeature({ ...baseDetails, ...hospitalDetails });
           }}
           onFeatureHover={(feature, latlng) => {
             console.log("Selected (Hover):", feature);
-            setSelectedFeature({
-              State: feature.properties.state,
-              Pincode: feature.properties.pincode,
+
+            const baseDetails = {
+              State: feature.properties.state || feature.properties.State,
+              Pincode: feature.properties.pincode || feature.properties.Pincode,
               Village: feature.properties.village,
-              District: feature.properties.district, // Added District as it's available in village data
+              District: feature.properties.district || feature.properties.District,
               City: feature.properties.city,
               Latitude: latlng?.lat.toFixed(4),
               Longitude: latlng?.lng.toFixed(4)
-            });
+            };
+
+            const hospitalDetails = feature.properties.Hospital_Name ? {
+              "Hospital Name": feature.properties.Hospital_Name,
+              "Category": feature.properties.Hospital_Category,
+            } : {};
+
+            setSelectedFeature({ ...baseDetails, ...hospitalDetails });
           }}
         />
 
@@ -358,32 +377,7 @@ function Legend({ className, activeCategories = [] }: { className?: string, acti
     )
   }
 
-  return (
-    <div
-      id="legend"
-      className={cn(
-        className,
-        "absolute bottom-8 right-8 z-50 backdrop-blur-sm shadow-xl px-6 py-6 rounded-lg space-y-4"
-      )}
-    >
-      <h2 className="font-semibold text-lg">Legend</h2>
-
-      <div className="flex items-center space-x-3">
-        <div className="w-6 h-6 bg-red-300/40 border border-white/20"></div>
-        <span>Low</span>
-      </div>
-
-      <div className="flex items-center space-x-3">
-        <div className="w-6 h-6 bg-red-500/40 border border-white/20"></div>
-        <span>Medium</span>
-      </div>
-
-      <div className="flex items-center space-x-3">
-        <div className="w-6 h-6 bg-red-700/40 border border-white/20"></div>
-        <span>High</span>
-      </div>
-    </div>
-  );
+  return null;
 }
 
 export default function Page() {
@@ -393,6 +387,7 @@ export default function Page() {
   const [districts, setDistricts] = useState<string[]>([]);
   const [range, setRange] = useState<[number, number]>([2023, 2025]);
   const [category, setCategory] = useState<string[]>([]);
+  const [hospitalSearch, setHospitalSearch] = useState<string>("");
 
   const [mouseLatLng, setMouseLatLng] = useState<{
     lat: number;
@@ -415,6 +410,8 @@ export default function Page() {
         opacity={opacity}
         setBrightness={setBrightness}
         setOpacity={setOpacity}
+        hospitalSearch={hospitalSearch}
+        setHospitalSearch={setHospitalSearch}
 
       />
 
@@ -426,6 +423,7 @@ export default function Page() {
         districts={districts}
         range={range}
         category={category}
+        hospitalSearch={hospitalSearch}
         mouseLatLng={mouseLatLng}
         setMouseLatLng={setMouseLatLng}
       />
