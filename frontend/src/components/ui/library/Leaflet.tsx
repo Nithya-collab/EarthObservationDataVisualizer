@@ -22,6 +22,7 @@ const Leaflet: React.FC<{
   const populationLayerRef = useRef<L.LayerGroup | null>(null);
   const hospitalLayerRef = useRef<L.LayerGroup | null>(null);
   const riverLayerRef = useRef<L.LayerGroup | null>(null);
+  const airlineLayerRef = useRef<L.LayerGroup | null>(null);
   const stateLayerRef = useRef<L.GeoJSON | null>(null);
   const populationDataCache = useRef<FeatureCollection | null>(null);
   const filtersRef = useRef(filters);
@@ -158,6 +159,20 @@ const Leaflet: React.FC<{
     } else {
       riverLayerRef.current?.clearLayers();
     }
+
+    // 5. Handle Airlines
+    if (categories.includes("Airlines")) {
+      console.log("Leaflet: Fetching Airlines...");
+      fetch(`http://localhost:5000/airlines`)
+        .then(res => res.json())
+        .then((data: FeatureCollection) => {
+          console.log("Leaflet: Airlines data received", data.features.length);
+          drawAirlines(data);
+        })
+        .catch(err => console.error("Leaflet: Airline fetch error", err));
+    } else {
+      airlineLayerRef.current?.clearLayers();
+    }
   };
 
   const drawRivers = (geojson: FeatureCollection) => {
@@ -193,6 +208,63 @@ const Leaflet: React.FC<{
         });
       }
     }).addTo(riverLayerRef.current!);
+  };
+
+  const drawAirlines = (geojson: FeatureCollection) => {
+    if (!mapRef.current || !airlineLayerRef.current) return;
+    airlineLayerRef.current.clearLayers();
+
+    // Airline/Airport style
+    const initialRadius = 5;
+    const initialColor = "#5e35b1"; // Deep Purple
+    const initialFillOpacity = 0.9;
+
+    geojson.features.forEach((feature: any) => {
+      if (!feature.geometry || feature.geometry.type !== "Point") return;
+
+      const [lng, lat] = feature.geometry.coordinates;
+
+      const marker = L.circleMarker([lat, lng], {
+        pane: "airlines",
+        radius: initialRadius,
+        fillColor: initialColor,
+        fillOpacity: initialFillOpacity,
+        stroke: false,
+      });
+
+      marker.bindPopup(`
+        <strong>${feature.properties.Name || "Airport"}</strong><br/>
+        Type: ${feature.properties.Type || "Unknown"}<br/>
+        ${feature.properties.District || ""}, ${feature.properties.State || ""}
+      `);
+
+      marker.on("mouseover", (e) => {
+        marker.setStyle({
+          radius: initialRadius * 1.5,
+          fillColor: "#7e57c2", // Lighter Purple
+          fillOpacity: 1,
+          stroke: true,
+          color: "white",
+          weight: 2
+        });
+        if (onFeatureHover) onFeatureHover(feature, e.latlng);
+      });
+
+      marker.on("mouseout", () => {
+        marker.setStyle({
+          radius: initialRadius,
+          fillColor: initialColor,
+          fillOpacity: initialFillOpacity,
+          stroke: false
+        });
+      });
+
+      marker.on("click", (e) => {
+        if (onFeatureClick) onFeatureClick(feature, e.latlng);
+      });
+
+      marker.addTo(airlineLayerRef.current!);
+    });
   };
 
   const drawHospitals = (geojson: FeatureCollection) => {
@@ -392,6 +464,9 @@ const Leaflet: React.FC<{
     map.createPane("population");
     map.getPane("population")!.style.zIndex = "450"; // ABOVE everything (default overlay is 400)
 
+    map.createPane("airlines");
+    map.getPane("airlines")!.style.zIndex = "500"; // Above population
+
     map.createPane("rivers");
     map.getPane("rivers")!.style.zIndex = "350"; // Between states and population
 
@@ -474,6 +549,7 @@ const Leaflet: React.FC<{
     populationLayerRef.current = L.layerGroup().addTo(map);
     hospitalLayerRef.current = L.layerGroup().addTo(map);
     riverLayerRef.current = L.layerGroup().addTo(map);
+    airlineLayerRef.current = L.layerGroup().addTo(map);
 
     map.on("zoomend", () => fetchGeoJson(filtersRef.current || {}, "true"));
 

@@ -431,7 +431,39 @@ app.get("/rivers", async (req, res) => {
     };
     res.json(geojson);
   } catch (err) {
-    console.error("RIVERS ERROR:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Endpoint to get Airlines
+app.get("/airlines", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        name,
+        type,
+        state,
+        district,
+        ST_AsGeoJSON(wkb_geometry) AS geometry
+      FROM india_airlines
+    `);
+
+    const geojson = {
+      type: "FeatureCollection",
+      features: result.rows.map(row => ({
+        type: "Feature",
+        geometry: JSON.parse(row.geometry),
+        properties: {
+          Name: row.name,
+          Type: row.type,
+          State: row.state,
+          District: row.district
+        }
+      }))
+    };
+    res.json(geojson);
+  } catch (err) {
+    console.error("AIRLINES ERROR:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
