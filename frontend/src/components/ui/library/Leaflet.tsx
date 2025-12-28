@@ -21,6 +21,7 @@ const Leaflet: React.FC<{
   const pointLayerRef = useRef<L.LayerGroup | null>(null);
   const populationLayerRef = useRef<L.LayerGroup | null>(null);
   const hospitalLayerRef = useRef<L.LayerGroup | null>(null);
+  const riverLayerRef = useRef<L.LayerGroup | null>(null);
   const stateLayerRef = useRef<L.GeoJSON | null>(null);
   const populationDataCache = useRef<FeatureCollection | null>(null);
   const filtersRef = useRef(filters);
@@ -143,6 +144,55 @@ const Leaflet: React.FC<{
     } else {
       hospitalLayerRef.current?.clearLayers();
     }
+
+    // 4. Handle Rivers
+    if (categories.includes("River")) {
+      console.log("Leaflet: Fetching Rivers...");
+      fetch(`http://localhost:5000/rivers`)
+        .then(res => res.json())
+        .then((data: FeatureCollection) => {
+          console.log("Leaflet: Rivers data received", data.features.length);
+          drawRivers(data);
+        })
+        .catch(err => console.error("Leaflet: River fetch error", err));
+    } else {
+      riverLayerRef.current?.clearLayers();
+    }
+  };
+
+  const drawRivers = (geojson: FeatureCollection) => {
+    if (!mapRef.current || !riverLayerRef.current) return;
+    riverLayerRef.current.clearLayers();
+
+    L.geoJSON(geojson, {
+      pane: "rivers",
+      style: {
+        color: "#0077be", // River blue
+        weight: 2,
+        opacity: 0.8,
+        fillOpacity: 0 // Rivers are lines generally
+      },
+      onEachFeature: (feature, layer) => {
+        const pathLayer = layer as L.Path;
+        pathLayer.bindPopup(`
+          <strong>${feature.properties.River_Name || "River"}</strong><br/>
+          Origin: ${feature.properties.Origin || "Unknown"}
+        `);
+
+        pathLayer.on({
+          mouseover: (e) => {
+            pathLayer.setStyle({ weight: 4, opacity: 1, color: "#0099ff" });
+            if (onFeatureHover) onFeatureHover(feature, e.latlng);
+          },
+          mouseout: () => {
+            pathLayer.setStyle({ weight: 2, opacity: 0.8, color: "#0077be" });
+          },
+          click: (e) => {
+            if (onFeatureClick) onFeatureClick(feature, e.latlng);
+          }
+        });
+      }
+    }).addTo(riverLayerRef.current!);
   };
 
   const drawHospitals = (geojson: FeatureCollection) => {
@@ -342,6 +392,9 @@ const Leaflet: React.FC<{
     map.createPane("population");
     map.getPane("population")!.style.zIndex = "450"; // ABOVE everything (default overlay is 400)
 
+    map.createPane("rivers");
+    map.getPane("rivers")!.style.zIndex = "350"; // Between states and population
+
     lightTileRef.current = L.tileLayer(
       "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       { pane: "tiles", opacity: opacity / 100 }
@@ -420,6 +473,7 @@ const Leaflet: React.FC<{
     pointLayerRef.current = L.layerGroup().addTo(map);
     populationLayerRef.current = L.layerGroup().addTo(map);
     hospitalLayerRef.current = L.layerGroup().addTo(map);
+    riverLayerRef.current = L.layerGroup().addTo(map);
 
     map.on("zoomend", () => fetchGeoJson(filtersRef.current || {}, "true"));
 

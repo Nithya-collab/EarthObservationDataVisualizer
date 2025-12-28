@@ -277,7 +277,12 @@ function SidebarInsetContent({
               "Care Type": feature.properties.Hospital_Care_Type,
             } : {};
 
-            setSelectedFeature({ ...baseDetails, ...hospitalDetails });
+            const riverDetails = feature.properties.River_Name ? {
+              "River Name": feature.properties.River_Name,
+              "Origin": feature.properties.Origin,
+            } : {};
+
+            setSelectedFeature({ ...baseDetails, ...hospitalDetails, ...riverDetails });
           }}
           onFeatureHover={(feature, latlng) => {
             console.log("Selected (Hover):", feature);
@@ -298,7 +303,11 @@ function SidebarInsetContent({
               "Hospital Category": feature.properties.Hospital_Category,
             } : {};
 
-            setSelectedFeature({ ...baseDetails, ...hospitalDetails });
+            const riverDetails = feature.properties.River_Name ? {
+              "River Name": feature.properties.River_Name,
+            } : {};
+
+            setSelectedFeature({ ...baseDetails, ...hospitalDetails, ...riverDetails });
           }}
         />
 

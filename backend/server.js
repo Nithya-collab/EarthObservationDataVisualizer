@@ -406,4 +406,34 @@ app.get("/hospitals", async (req, res) => {
 
 
 
+
+// Endpoint to get Rivers
+app.get("/rivers", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        rivname,
+        origin,
+        ST_AsGeoJSON(wkb_geometry) AS geometry
+      FROM india_rivers
+    `);
+
+    const geojson = {
+      type: "FeatureCollection",
+      features: result.rows.map(row => ({
+        type: "Feature",
+        geometry: JSON.parse(row.geometry),
+        properties: {
+          River_Name: row.rivname,
+          Origin: row.origin
+        }
+      }))
+    };
+    res.json(geojson);
+  } catch (err) {
+    console.error("RIVERS ERROR:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 app.listen(5000, () => console.log("Server running on port 5000"));
