@@ -210,26 +210,44 @@ const Leaflet: React.FC<{
     }).addTo(riverLayerRef.current!);
   };
 
+  const getPlaneSvg = (color: string, size: number) => `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${color}" width="${size}px" height="${size}px">
+      <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+    </svg>
+  `;
+
   const drawAirlines = (geojson: FeatureCollection) => {
     if (!mapRef.current || !airlineLayerRef.current) return;
     airlineLayerRef.current.clearLayers();
 
     // Airline/Airport style
-    const initialRadius = 5;
     const initialColor = "#5e35b1"; // Deep Purple
-    const initialFillOpacity = 0.9;
+    const hoverColor = "#7e57c2";   // Lighter Purple
+    const initialSize = 24;
+    const hoverSize = 36;
 
     geojson.features.forEach((feature: any) => {
       if (!feature.geometry || feature.geometry.type !== "Point") return;
 
       const [lng, lat] = feature.geometry.coordinates;
 
-      const marker = L.circleMarker([lat, lng], {
+      const initialIcon = L.divIcon({
+        className: "leaflet-plane-icon",
+        html: getPlaneSvg(initialColor, initialSize),
+        iconSize: [initialSize, initialSize],
+        iconAnchor: [initialSize / 2, initialSize / 2],
+      });
+
+      const hoverIcon = L.divIcon({
+        className: "leaflet-plane-icon-hover",
+        html: getPlaneSvg(hoverColor, hoverSize),
+        iconSize: [hoverSize, hoverSize],
+        iconAnchor: [hoverSize / 2, hoverSize / 2],
+      });
+
+      const marker = L.marker([lat, lng], {
         pane: "airlines",
-        radius: initialRadius,
-        fillColor: initialColor,
-        fillOpacity: initialFillOpacity,
-        stroke: false,
+        icon: initialIcon,
       });
 
       marker.bindPopup(`
@@ -239,24 +257,14 @@ const Leaflet: React.FC<{
       `);
 
       marker.on("mouseover", (e) => {
-        marker.setStyle({
-          radius: initialRadius * 1.5,
-          fillColor: "#7e57c2", // Lighter Purple
-          fillOpacity: 1,
-          stroke: true,
-          color: "white",
-          weight: 2
-        });
+        marker.setIcon(hoverIcon);
+        marker.setZIndexOffset(1000); // Bring to front
         if (onFeatureHover) onFeatureHover(feature, e.latlng);
       });
 
       marker.on("mouseout", () => {
-        marker.setStyle({
-          radius: initialRadius,
-          fillColor: initialColor,
-          fillOpacity: initialFillOpacity,
-          stroke: false
-        });
+        marker.setIcon(initialIcon);
+        marker.setZIndexOffset(0);
       });
 
       marker.on("click", (e) => {
