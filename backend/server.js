@@ -498,4 +498,37 @@ app.get("/railways", async (req, res) => {
   }
 });
 
+// Endpoint to get Roads
+app.get("/roads", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        name,
+        highway,
+        surface,
+        ST_AsGeoJSON(wkb_geometry) AS geometry
+      FROM india_roads
+      LIMIT 5000
+    `);
+
+    const geojson = {
+      type: "FeatureCollection",
+      features: result.rows.map(row => ({
+        type: "Feature",
+        geometry: JSON.parse(row.geometry),
+        properties: {
+          Name: row.name,
+          Type: row.highway,
+          Surface: row.surface
+        }
+      }))
+    };
+    res.json(geojson);
+  } catch (err) {
+    console.error("ROADS ERROR:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+
 app.listen(5000, () => console.log("Server running on port 5000"));
