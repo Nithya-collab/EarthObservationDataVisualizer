@@ -23,7 +23,9 @@ const Leaflet: React.FC<{
   const hospitalLayerRef = useRef<L.LayerGroup | null>(null);
   const riverLayerRef = useRef<L.LayerGroup | null>(null);
   const airlineLayerRef = useRef<L.LayerGroup | null>(null);
+
   const railwayLayerRef = useRef<L.LayerGroup | null>(null);
+  const roadLayerRef = useRef<L.LayerGroup | null>(null);
   const stateLayerRef = useRef<L.GeoJSON | null>(null);
   const populationDataCache = useRef<FeatureCollection | null>(null);
   const filtersRef = useRef(filters);
@@ -188,6 +190,20 @@ const Leaflet: React.FC<{
     } else {
       railwayLayerRef.current?.clearLayers();
     }
+
+    // 7. Handle Roads
+    if (categories.includes("Roads")) {
+      console.log("Leaflet: Fetching Roads...");
+      fetch(`http://localhost:5000/roads`)
+        .then(res => res.json())
+        .then((data: FeatureCollection) => {
+          console.log("Leaflet: Roads data received", data.features.length);
+          drawRoads(data);
+        })
+        .catch(err => console.error("Leaflet: Roads fetch error", err));
+    } else {
+      roadLayerRef.current?.clearLayers();
+    }
   };
 
   const drawRivers = (geojson: FeatureCollection) => {
@@ -322,6 +338,57 @@ const Leaflet: React.FC<{
         `);
       }
     }).addTo(railwayLayerRef.current!);
+  };
+
+  const drawRoads = (geojson: FeatureCollection) => {
+    if (!mapRef.current || !roadLayerRef.current) return;
+    roadLayerRef.current.clearLayers();
+
+    L.geoJSON(geojson, {
+      pane: "roads",
+      style: (feature) => {
+        const type = feature?.properties?.Type;
+        let color = "#ffa500"; // Default orange
+        let weight = 2;
+
+        // Simple styling based on highway type
+        if (type === 'motorway' || type === 'trunk') {
+          color = "#e65100"; // Darker orange/red
+          weight = 4;
+        } else if (type === 'primary') {
+          color = "#fb8c00";
+          weight = 3;
+        }
+
+        return {
+          color: color,
+          weight: weight,
+          opacity: 0.8
+        };
+      },
+      onEachFeature: (feature, layer) => {
+        const pathLayer = layer as L.Path;
+        pathLayer.bindPopup(`
+          <strong>${feature.properties.Name || "Road"}</strong><br/>
+          Type: ${feature.properties.Type || "Unknown"}<br/>
+          Surface: ${feature.properties.Surface || "Unknown"}
+        `);
+
+        pathLayer.on({
+          mouseover: (e) => {
+            pathLayer.setStyle({ weight: 5, opacity: 1 });
+            if (onFeatureHover) onFeatureHover(feature, e.latlng);
+          },
+          mouseout: () => {
+            // Reset style - simplified
+            pathLayer.setStyle({ weight: (feature.properties.Type === 'motorway' ? 4 : 2), opacity: 0.8 });
+          },
+          click: (e) => {
+            if (onFeatureClick) onFeatureClick(feature, e.latlng);
+          }
+        });
+      }
+    }).addTo(roadLayerRef.current!);
   };
 
   const drawHospitals = (geojson: FeatureCollection) => {
@@ -530,6 +597,9 @@ const Leaflet: React.FC<{
     map.createPane("railways");
     map.getPane("railways")!.style.zIndex = "360"; // Above rivers
 
+    map.createPane("roads");
+    map.getPane("roads")!.style.zIndex = "355"; // Between rivers and railways
+
     lightTileRef.current = L.tileLayer(
       "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       { pane: "tiles", opacity: opacity / 100 }
@@ -611,6 +681,7 @@ const Leaflet: React.FC<{
     riverLayerRef.current = L.layerGroup().addTo(map);
     airlineLayerRef.current = L.layerGroup().addTo(map);
     railwayLayerRef.current = L.layerGroup().addTo(map);
+    roadLayerRef.current = L.layerGroup().addTo(map);
 
     map.on("zoomend", () => fetchGeoJson(filtersRef.current || {}, "true"));
 
