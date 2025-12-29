@@ -468,4 +468,34 @@ app.get("/airlines", async (req, res) => {
   }
 });
 
+// Endpoint to get Railways
+app.get("/railways", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        name,
+        railway,
+        ST_AsGeoJSON(wkb_geometry) AS geometry
+      FROM india_railways
+      LIMIT 5000
+    `);
+
+    const geojson = {
+      type: "FeatureCollection",
+      features: result.rows.map(row => ({
+        type: "Feature",
+        geometry: JSON.parse(row.geometry),
+        properties: {
+          Name: row.name,
+          Type: row.railway
+        }
+      }))
+    };
+    res.json(geojson);
+  } catch (err) {
+    console.error("RAILWAYS ERROR:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 app.listen(5000, () => console.log("Server running on port 5000"));

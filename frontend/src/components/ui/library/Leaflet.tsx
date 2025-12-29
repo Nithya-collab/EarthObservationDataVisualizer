@@ -23,6 +23,7 @@ const Leaflet: React.FC<{
   const hospitalLayerRef = useRef<L.LayerGroup | null>(null);
   const riverLayerRef = useRef<L.LayerGroup | null>(null);
   const airlineLayerRef = useRef<L.LayerGroup | null>(null);
+  const railwayLayerRef = useRef<L.LayerGroup | null>(null);
   const stateLayerRef = useRef<L.GeoJSON | null>(null);
   const populationDataCache = useRef<FeatureCollection | null>(null);
   const filtersRef = useRef(filters);
@@ -173,6 +174,20 @@ const Leaflet: React.FC<{
     } else {
       airlineLayerRef.current?.clearLayers();
     }
+
+    // 6. Handle Railway
+    if (categories.includes("Railway")) {
+      console.log("Leaflet: Fetching Railways...");
+      fetch(`http://localhost:5000/railways`)
+        .then(res => res.json())
+        .then((data: FeatureCollection) => {
+          console.log("Leaflet: Railways data received", data.features.length);
+          drawRailways(data);
+        })
+        .catch(err => console.error("Leaflet: Railway fetch error", err));
+    } else {
+      railwayLayerRef.current?.clearLayers();
+    }
   };
 
   const drawRivers = (geojson: FeatureCollection) => {
@@ -273,6 +288,40 @@ const Leaflet: React.FC<{
 
       marker.addTo(airlineLayerRef.current!);
     });
+  };
+
+  const drawRailways = (geojson: FeatureCollection) => {
+    if (!mapRef.current || !railwayLayerRef.current) return;
+    railwayLayerRef.current.clearLayers();
+
+    // Styled like tracks: Two lines per feature
+    // 1. Base line (sleepers/width)
+    L.geoJSON(geojson, {
+      pane: "railways",
+      style: {
+        color: "#555",
+        weight: 3,
+        opacity: 0.8
+      }
+    }).addTo(railwayLayerRef.current!);
+
+    // 2. Dashed line (rails) - Creates track effect
+    L.geoJSON(geojson, {
+      pane: "railways",
+      style: {
+        color: "#fff",
+        weight: 2,
+        dashArray: "4, 8",
+        opacity: 1
+      },
+      onEachFeature: (feature, layer) => {
+        const pathLayer = layer as L.Path;
+        pathLayer.bindPopup(`
+          <strong>${feature.properties.Name || "Railway"}</strong><br/>
+          Type: ${feature.properties.Type || "Unknown"}
+        `);
+      }
+    }).addTo(railwayLayerRef.current!);
   };
 
   const drawHospitals = (geojson: FeatureCollection) => {
@@ -478,6 +527,9 @@ const Leaflet: React.FC<{
     map.createPane("rivers");
     map.getPane("rivers")!.style.zIndex = "350"; // Between states and population
 
+    map.createPane("railways");
+    map.getPane("railways")!.style.zIndex = "360"; // Above rivers
+
     lightTileRef.current = L.tileLayer(
       "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       { pane: "tiles", opacity: opacity / 100 }
@@ -558,6 +610,7 @@ const Leaflet: React.FC<{
     hospitalLayerRef.current = L.layerGroup().addTo(map);
     riverLayerRef.current = L.layerGroup().addTo(map);
     airlineLayerRef.current = L.layerGroup().addTo(map);
+    railwayLayerRef.current = L.layerGroup().addTo(map);
 
     map.on("zoomend", () => fetchGeoJson(filtersRef.current || {}, "true"));
 
