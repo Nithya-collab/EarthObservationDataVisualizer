@@ -266,7 +266,8 @@ function SidebarInsetContent({
               State: feature.properties.state || feature.properties.State,
               Pincode: feature.properties.pincode || feature.properties.Pincode,
               Village: feature.properties.village,
-              City: feature.properties.city,
+              City: feature.properties.city || feature.properties.City,
+              District: feature.properties.district || feature.properties.District,
               Latitude: latlng?.lat.toFixed(4),
               Longitude: latlng?.lng.toFixed(4)
             };
@@ -282,7 +283,13 @@ function SidebarInsetContent({
               "Origin": feature.properties.Origin,
             } : {};
 
-            setSelectedFeature({ ...baseDetails, ...hospitalDetails, ...riverDetails });
+            const tempDetails = feature.properties.Temperature ? {
+              "City": feature.properties.City,
+              "Temperature": feature.properties.Temperature + "°C",
+              "Condition": feature.properties.Description
+            } : {};
+
+            setSelectedFeature({ ...baseDetails, ...hospitalDetails, ...riverDetails, ...tempDetails });
           }}
           onFeatureHover={(feature, latlng) => {
             console.log("Selected (Hover):", feature);
@@ -293,7 +300,7 @@ function SidebarInsetContent({
               Pincode: feature.properties.pincode || feature.properties.Pincode,
               Village: feature.properties.village,
               District: feature.properties.district || feature.properties.District,
-              City: feature.properties.city,
+              City: feature.properties.city || feature.properties.City,
               Latitude: latlng?.lat.toFixed(4),
               Longitude: latlng?.lng.toFixed(4)
             };
@@ -307,7 +314,11 @@ function SidebarInsetContent({
               "River Name": feature.properties.River_Name,
             } : {};
 
-            setSelectedFeature({ ...baseDetails, ...hospitalDetails, ...riverDetails });
+            const tempDetails = feature.properties.Temperature ? {
+              "Temperature": feature.properties.Temperature + "°C",
+            } : {};
+
+            setSelectedFeature({ ...baseDetails, ...hospitalDetails, ...riverDetails, ...tempDetails });
           }}
         />
 
@@ -366,29 +377,40 @@ function SidebarInsetContent({
 }
 
 function Legend({ className, activeCategories = [] }: { className?: string, activeCategories?: string[] }) {
-  if (activeCategories.includes("Population")) {
-    return (
-      <div
-        id="legend"
-        className={cn(
-          className,
-          "absolute bottom-8 right-8 z-50 backdrop-blur-sm shadow-xl px-4 py-4 rounded-lg space-y-2 text-xs"
-        )}
-      >
-        <h2 className="font-semibold text-sm mb-2">Population Density (per km²)</h2>
-        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#800026]"></div><span>&gt; 1000</span></div>
-        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#BD0026]"></div><span>500 - 1000</span></div>
-        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#E31A1C]"></div><span>200 - 500</span></div>
-        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#FC4E2A]"></div><span>100 - 200</span></div>
-        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#FD8D3C]"></div><span>50 - 100</span></div>
-        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#FEB24C]"></div><span>20 - 50</span></div>
-        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#FED976]"></div><span>10 - 20</span></div>
-        <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#FFEDA0]"></div><span>&lt; 10</span></div>
-      </div>
-    )
-  }
+  if (!activeCategories.length) return null;
 
-  return null;
+  return (
+    <div
+      id="legend"
+      className={cn(
+        className,
+        "absolute bottom-8 right-8 z-50 backdrop-blur-sm shadow-xl px-4 py-4 rounded-lg space-y-4 text-xs max-h-[60vh] overflow-y-auto"
+      )}
+    >
+      {activeCategories.includes("Population") && (
+        <div className="space-y-2">
+          <h2 className="font-semibold text-sm mb-2">Population Density (per km²)</h2>
+          <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#800026]"></div><span>&gt; 1000</span></div>
+          <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#BD0026]"></div><span>500 - 1000</span></div>
+          <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#E31A1C]"></div><span>200 - 500</span></div>
+          <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#FC4E2A]"></div><span>100 - 200</span></div>
+          <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#FD8D3C]"></div><span>50 - 100</span></div>
+          <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#FEB24C]"></div><span>20 - 50</span></div>
+          <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#FED976]"></div><span>10 - 20</span></div>
+          <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#FFEDA0]"></div><span>&lt; 10</span></div>
+        </div>
+      )}
+
+      {activeCategories.includes("Temperature") && (
+        <div className="space-y-2">
+          <h2 className="font-semibold text-sm mb-2">Temperature (°C)</h2>
+          <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#ff5722]"></div><span>&gt; 30°C (Hot)</span></div>
+          <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#ff9800]"></div><span>20°C - 30°C (Warm)</span></div>
+          <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#4caf50]"></div><span>&lt; 20°C (Mild)</span></div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function Page() {
