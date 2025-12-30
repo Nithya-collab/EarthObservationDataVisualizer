@@ -68,3 +68,24 @@ test('postgis extension is installed', async () => {
     await client.end();
   }
 });
+
+test('india_roads table exists', async () => {
+  const client = new Client(dbConfig);
+  await client.connect();
+
+  try {
+    const query = `
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_name = 'india_roads'
+      );
+    `;
+    const res = await client.query(query);
+    const tableExists = res.rows[0].exists;
+
+    assert.strictEqual(tableExists, true, 'The "india_roads" table does not exist in the database!');
+  } finally {
+    await client.end();
+  }
+});
