@@ -26,6 +26,7 @@ const Leaflet: React.FC<{
 
   const railwayLayerRef = useRef<L.LayerGroup | null>(null);
   const roadLayerRef = useRef<L.LayerGroup | null>(null);
+  const tempLayerRef = useRef<L.LayerGroup | null>(null);
   const stateLayerRef = useRef<L.GeoJSON | null>(null);
   const populationDataCache = useRef<FeatureCollection | null>(null);
   const filtersRef = useRef(filters);
@@ -204,6 +205,70 @@ const Leaflet: React.FC<{
     } else {
       roadLayerRef.current?.clearLayers();
     }
+
+    // 8. Handle Temperature
+    if (categories.includes("Temperature")) {
+      console.log("Leaflet: Fetching Temperature...");
+      fetch(`http://localhost:5000/temperature`)
+        .then(res => res.json())
+        .then((data: FeatureCollection) => {
+          console.log("Leaflet: Temperature data received", data.features.length);
+          drawTemperature(data);
+        })
+        .catch(err => console.error("Leaflet: Temperature fetch error", err));
+    } else {
+      tempLayerRef.current?.clearLayers();
+    }
+  };
+
+  const drawTemperature = (geojson: FeatureCollection) => {
+    if (!mapRef.current || !tempLayerRef.current) return;
+    tempLayerRef.current.clearLayers();
+
+    geojson.features.forEach((feature: any) => {
+      if (!feature.geometry || feature.geometry.type !== "Point") return;
+
+      const [lng, lat] = feature.geometry.coordinates;
+      const temp = feature.properties.Temperature;
+
+      // Color based on temp
+      const color = parseFloat(temp) > 30 ? "#ff5722" : parseFloat(temp) > 20 ? "#ff9800" : "#4caf50";
+
+      const icon = L.divIcon({
+        className: "temp-icon",
+        html: `<div style="
+          background: ${color}; 
+          color: white; 
+          padding: 4px 8px; 
+          border-radius: 12px; 
+          font-weight: bold; 
+          font-size: 12px;
+          border: 2px solid white;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          text-align: center;
+          width: fit-content;
+        ">${temp}°C</div>`,
+        iconSize: [40, 20],
+        iconAnchor: [20, 10]
+      });
+
+      const marker = L.marker([lat, lng], {
+        pane: "temperature",
+        icon: icon
+      });
+
+      marker.bindPopup(`
+        <strong>${feature.properties.City}</strong><br/>
+        Temp: ${temp}°C<br/>
+        Condition: ${feature.properties.Description}
+      `);
+
+      marker.on("click", (e) => {
+        if (onFeatureClick) onFeatureClick(feature, e.latlng);
+      });
+
+      marker.addTo(tempLayerRef.current!);
+    });
   };
 
   const drawRivers = (geojson: FeatureCollection) => {
@@ -600,6 +665,9 @@ const Leaflet: React.FC<{
     map.createPane("roads");
     map.getPane("roads")!.style.zIndex = "355"; // Between rivers and railways
 
+    map.createPane("temperature");
+    map.getPane("temperature")!.style.zIndex = "600"; // Topmost
+
     lightTileRef.current = L.tileLayer(
       "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       { pane: "tiles", opacity: opacity / 100 }
@@ -682,6 +750,7 @@ const Leaflet: React.FC<{
     airlineLayerRef.current = L.layerGroup().addTo(map);
     railwayLayerRef.current = L.layerGroup().addTo(map);
     roadLayerRef.current = L.layerGroup().addTo(map);
+    tempLayerRef.current = L.layerGroup().addTo(map);
 
     map.on("zoomend", () => fetchGeoJson(filtersRef.current || {}, "true"));
 
