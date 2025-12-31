@@ -10,11 +10,12 @@ import {
 import { useState } from "react";
 
 export function CityMultiSelect({
+    value = [],
     onChange,
 }: {
+    value?: string[];
     onChange?: (values: string[]) => void;
 }) {
-    const [selected, setSelected] = useState<string[]>([]);
     const [isOpen, setIsOpen] = useState(false);
 
     // Fetch cities (Tamil Nadu example)
@@ -35,11 +36,10 @@ export function CityMultiSelect({
     });
 
     const toggleSelect = (item: string) => {
-        const updated = selected.includes(item)
-            ? selected.filter((i) => i !== item)
-            : [...selected, item];
+        const updated = value.includes(item)
+            ? value.filter((i) => i !== item)
+            : [...value, item];
 
-        setSelected(updated);
         onChange?.(updated);
     };
 
@@ -57,13 +57,13 @@ export function CityMultiSelect({
                     onClick={() => setIsOpen(!isOpen)}
                 >
 
-                    {/* If nothing selected */}
-                    {selected.length === 0 && (
+                    {/* If nothing value */}
+                    {value.length === 0 && (
                         <span className="text-muted-foreground">Select cities...</span>
                     )}
 
-                    {/* Show only first two selected as badges */}
-                    {selected.slice(0, 1).map((item) => (
+                    {/* Show only first two value as badges */}
+                    {value.slice(0, 1).map((item) => (
                         <span
                             key={item}
                             className="flex items-center bg-gray-300 text-black px-1 rounded text-sm"
@@ -84,10 +84,10 @@ export function CityMultiSelect({
                         </span>
                     ))}
 
-                    {/* If more than 2 selected, show "+X more" */}
-                    {selected.length > 1 && (
+                    {/* If more than 2 value, show "+X more" */}
+                    {value.length > 1 && (
                         <span className="text-sm text-gray-500">
-                            +{selected.length - 1} more…
+                            +{value.length - 1} more…
                         </span>
                     )}
                 </div>
@@ -104,7 +104,7 @@ export function CityMultiSelect({
                                 >
                                     <span className="flex justify-between items-center w-full">
                                         {district}
-                                        {selected.includes(district) && (
+                                        {value.includes(district) && (
                                             <span className="text-green-500">✔</span>
                                         )}
                                     </span>

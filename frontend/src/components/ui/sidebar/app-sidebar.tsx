@@ -213,6 +213,7 @@ export function AppSidebar({
                             id={item.title}
                             type="checkbox"
                             className="w-[15px] bg-white"
+                            checked={category?.includes(item.title)}
                             onChange={(e) => {
                               const isChecked = e.target.checked;
 
