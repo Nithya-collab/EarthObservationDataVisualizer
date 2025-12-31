@@ -534,11 +534,17 @@ app.get("/roads", async (req, res) => {
 
 app.listen(5000, () => console.log("Server running on port 5000"));
 
-// Endpoint to get Temperature
+// Endpoint to get Temperature and Weather Stats
 app.get("/temperature", async (req, res) => {
   try {
+    const { startYear, endYear } = req.query;
 
-    // Major cities with their coordinates (approximate)
+    const start = startYear ? `${startYear}-01-01` : "2024-01-01";
+    const end = endYear ? `${endYear}-12-31` : "2024-12-31";
+
+    console.log(`Fetching weather data from ${start} to ${end}`);
+
+    // Major cities with their coordinates
     const cities = [
       { name: "Delhi", lat: 28.6139, lng: 77.2090 },
       { name: "Mumbai", lat: 19.0760, lng: 72.8777 },
@@ -563,34 +569,73 @@ app.get("/temperature", async (req, res) => {
 
     const weatherData = await Promise.all(cities.map(async (city) => {
       let temp = null;
+      let rainfall = 0;
+      let dryDays = 0;
+      let totalDays = 0;
       let desc = "Unavailable";
 
       try {
-        // Try fetching from API
-        // Note: API seems flaky, fallback logic included
-        const response = await fetch(`https://weather.indianapi.in/india/weather?city=${encodeURIComponent(city.name)}`, {
-          headers: { 'x-api-key': process.env.API_KEY }
+        // Construct Meteostat API URL
+        const url = `https://meteostat.p.rapidapi.com/point/daily?lat=${city.lat}&lon=${city.lng}&start=${start}&end=${end}`;
+
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'x-rapidapi-key': process.env.RAPIDAPI_KEY || process.env.API_KEY,
+            'x-rapidapi-host': 'meteostat.p.rapidapi.com'
+          }
         });
 
         if (response.ok) {
-          const data = await response.json();
-          // Adjust parsing based on actual API response structure if it works
-          if (data && data.temp) {
-            temp = data.temp;
-            desc = data.description || "Clear";
-          } else if (data && data.current && data.current.temp_c) {
-            temp = data.current.temp_c;
-            desc = data.current.condition.text;
+          const result = await response.json();
+          const dailyData = result.data || [];
+
+          if (dailyData.length > 0) {
+            let totalTemp = 0;
+            let countTemp = 0;
+
+            dailyData.forEach(day => {
+              // Temperature
+              if (day.tavg !== null) {
+                totalTemp += day.tavg;
+                countTemp++;
+              }
+              // Rainfall
+              if (day.prcp !== null) {
+                rainfall += day.prcp;
+                if (day.prcp === 0) {
+                  dryDays++;
+                }
+              } else {
+                // assume null prcp might mean no data, or 0? keeping simple
+                // if we don't know, we don't count towards dryness accuracy
+              }
+              totalDays++;
+            });
+
+            if (countTemp > 0) {
+              temp = (totalTemp / countTemp).toFixed(1);
+            }
+            rainfall = rainfall.toFixed(1);
+
+            // Dryness Logic
+            // desc = `Dry Days: ${dryDays}/${totalDays}`;
+            // Simplify description for popup
+            desc = countTemp > 0 ? "Data Loaded" : "No Temp Data";
           }
+        } else {
+          console.warn(`API call failed for ${city.name}: ${response.status}`);
         }
       } catch (err) {
-        // console.error(`Error fetching weather for ${city.name}:`, err.message);
+        console.error(`Error fetching weather for ${city.name}:`, err.message);
       }
 
-      // FALLBACK MOCK DATA if API failed (which we observed in testing)
+      // FALLBACK MOCK DATA
       if (temp === null) {
-        // Generate random temperature between 15 and 35
         temp = (Math.random() * (35 - 15) + 15).toFixed(1);
+        rainfall = (Math.random() * 500).toFixed(1); // random rainfall
+        dryDays = Math.floor(Math.random() * 300); // random dry days
+        totalDays = 365;
         desc = "Simulated";
       }
 
@@ -603,6 +648,9 @@ app.get("/temperature", async (req, res) => {
         properties: {
           City: city.name,
           Temperature: temp,
+          Rainfall: rainfall,
+          Dryness: dryDays,
+          TotalDays: totalDays,
           Description: desc
         }
       };
