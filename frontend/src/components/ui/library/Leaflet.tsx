@@ -30,6 +30,14 @@ const Leaflet: React.FC<{
   const stateLayerRef = useRef<L.GeoJSON | null>(null);
   const populationDataCache = useRef<FeatureCollection | null>(null);
   const filtersRef = useRef(filters);
+  const weatherDataCache = useRef<FeatureCollection | null>(null);
+  const weatherParamsCache = useRef<string>("");
+
+
+
+
+
+
 
   // Keep filtersRef in sync with props
   useEffect(() => {
@@ -209,26 +217,39 @@ const Leaflet: React.FC<{
     // 8. Handle Temperature, Rainfall, Dryness, Flood
     const weatherCategories = ["Temperature", "Rainfall", "Dryness", "Flood"];
     if (weatherCategories.some(c => categories.includes(c))) {
-      console.log("Leaflet: Fetching Weather Data...");
-      const query = new URLSearchParams({
-        startYear: filters?.start || "",
-        endYear: filters?.end || ""
-      }).toString();
+      const activeWeatherParams = `${filters?.start}-${filters?.end}`;
 
-      fetch(`http://localhost:5000/temperature?${query}`)
-        .then(res => res.json())
-        .then((data: FeatureCollection) => {
-          console.log("Leaflet: Weather data received", data.features.length);
-          // Determine which metric to prioritize for display
-          let activeMetric = "Temperature";
-          if (categories.includes("Rainfall")) activeMetric = "Rainfall";
-          if (categories.includes("Dryness")) activeMetric = "Dryness";
-          if (categories.includes("Flood")) activeMetric = "Flood";
-          if (categories.includes("Temperature")) activeMetric = "Temperature"; // high priority
+      // Determine which metric to prioritize for display
+      let activeMetric = "Temperature";
+      if (categories.includes("Rainfall")) activeMetric = "Rainfall";
+      if (categories.includes("Dryness")) activeMetric = "Dryness";
+      if (categories.includes("Flood")) activeMetric = "Flood";
+      if (categories.includes("Temperature")) activeMetric = "Temperature"; // high priority
 
-          drawWeather(data, activeMetric);
-        })
-        .catch(err => console.error("Leaflet: Weather fetch error", err));
+      // Check cache validity (same date range)
+      if (weatherDataCache.current && weatherParamsCache.current === activeWeatherParams) {
+        console.log("Leaflet: Using cached weather data");
+        drawWeather(weatherDataCache.current, activeMetric);
+      } else {
+        console.log("Leaflet: Fetching Weather Data...");
+        const query = new URLSearchParams({
+          startYear: filters?.start || "",
+          endYear: filters?.end || ""
+        }).toString();
+
+        fetch(`http://localhost:5000/temperature?${query}`)
+          .then(res => res.json())
+          .then((data: FeatureCollection) => {
+            console.log("Leaflet: Weather data received", data.features.length);
+
+            // Update cache
+            weatherDataCache.current = data;
+            weatherParamsCache.current = activeWeatherParams;
+
+            drawWeather(data, activeMetric);
+          })
+          .catch(err => console.error("Leaflet: Weather fetch error", err));
+      }
     } else {
       tempLayerRef.current?.clearLayers();
     }
