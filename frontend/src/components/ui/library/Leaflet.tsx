@@ -845,12 +845,49 @@ const Leaflet: React.FC<{
     if (!stateLayerRef.current) return;
 
     // Check if Population is active
-    const isActive = filtersRef.current?.category?.includes("Population");
+    const isPopulationActive = filtersRef.current?.category?.includes("Population");
+
+    // Check key districts (states) selection
+    const selectedDistrictsStr = filtersRef.current?.district || "";
+    const selectedDistricts = selectedDistrictsStr ? selectedDistrictsStr.split(",") : [];
 
     stateLayerRef.current.eachLayer((layer: any) => {
       const name = layer.feature?.properties?.state || "";
-      if (isActive) {
-        // Hide fill, maybe keep faint border
+
+      // If we have selected states, highlight them and dim others
+      if (selectedDistricts.length > 0) {
+        if (selectedDistricts.includes(name)) {
+          // HIGHLIGHT
+          layer.setStyle({
+            color: "#000",      // Black border for visibility
+            weight: 2,
+            fillColor: getStateColor(name),
+            fillOpacity: 0.7    // High opacity
+          });
+        } else {
+          // DIM OTHERS
+          layer.setStyle({
+            color: getStateColor(name),
+            weight: 1,
+            fillColor: getStateColor(name),
+            fillOpacity: 0.1    // Low opacity
+          });
+
+          // If population is active, maybe we want to hide them completely?
+          if (isPopulationActive) {
+            layer.setStyle({
+              fillOpacity: 0,
+              opacity: 0,
+              weight: 0
+            });
+          }
+        }
+        return;
+      }
+
+      // DEFAULT BEHAVIOR (No state selected)
+      if (isPopulationActive) {
+        // Hide fill if population is showing (to not obscure density map)
         layer.setStyle({
           fillOpacity: 0,
           opacity: 0,
