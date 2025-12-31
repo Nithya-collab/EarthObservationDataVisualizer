@@ -1,7 +1,7 @@
 "use client";
 
 import { Slider } from "@/components/ui/slider";
-import { Eye } from "lucide-react";
+import { WiMoonAltWaxingCrescent6 } from "react-icons/wi";
 import { Sun } from "lucide-react";
 
 type Props = {
@@ -12,22 +12,22 @@ type Props = {
   onOpacityChange: (value: number) => void;
 };
 
-export default function BrightnessOpacityControl({ 
-    className,
-    brightness,
-    opacity,
-    onBrightnessChange,
-    onOpacityChange
-}:Props) {
-  
+export default function BrightnessOpacityControl({
+  className,
+  brightness,
+  opacity,
+  onBrightnessChange,
+  onOpacityChange
+}: Props) {
+
 
   return (
-    
-  <div className={`flex flex-col items-center space-x-6${className}`}>
+
+    <div className={`flex flex-col items-center space-x-6${className}`}>
       {/* Brightness */}
       <div className="flex flex-col items-center">
         {/* <span className="text-sm font-medium -mb-15">Brightness</span> */}
-        <span className="text-sm font-medium -mb-21 -ml-50"><Sun/></span>
+        <span className="text-sm font-medium -mb-21 -ml-50"><Sun /></span>
         <Slider
           value={[brightness]}
           onValueChange={(val) => onBrightnessChange(val[0])}
@@ -42,7 +42,7 @@ export default function BrightnessOpacityControl({
       {/* Opacity */}
       <div className="flex flex-col items-center">
         {/* <span className="text-sm font-medium -mb-15">Opacity</span> */}
-        <span className="text-sm font-medium -mb-21 -ml-50"><Eye/></span>
+        <span className="text-sm font-medium -mb-21 -ml-50"><WiMoonAltWaxingCrescent6 size={20} /></span>
 
         <Slider
           value={[opacity]}

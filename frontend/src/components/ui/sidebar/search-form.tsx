@@ -9,8 +9,7 @@ import {
 import { CityMultiSelect } from "./CityMultiSelect";
 import { useNavigate } from "react-router-dom";
 import YearRangeSelect from "../YearRange";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
 
 
 
@@ -44,9 +43,13 @@ export function SearchForm({
       <SidebarGroup className="py-0">
         <SidebarGroupContent>
 
-          <CityMultiSelect onChange={setDistricts} />
+          <CityMultiSelect value={districts} onChange={setDistricts} />
 
-          <YearRangeSelect onChange={setRange} />
+          <YearRangeSelect
+            initialStart={range?.[0]}
+            initialEnd={range?.[1]}
+            onChange={setRange}
+          />
 
           {category.includes("Hospitals") && (
             <div className="mt-4">

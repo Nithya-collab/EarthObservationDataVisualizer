@@ -21,9 +21,23 @@ const Leaflet: React.FC<{
   const pointLayerRef = useRef<L.LayerGroup | null>(null);
   const populationLayerRef = useRef<L.LayerGroup | null>(null);
   const hospitalLayerRef = useRef<L.LayerGroup | null>(null);
+  const riverLayerRef = useRef<L.LayerGroup | null>(null);
+  const airlineLayerRef = useRef<L.LayerGroup | null>(null);
+
+  const railwayLayerRef = useRef<L.LayerGroup | null>(null);
+  const roadLayerRef = useRef<L.LayerGroup | null>(null);
+  const tempLayerRef = useRef<L.LayerGroup | null>(null);
   const stateLayerRef = useRef<L.GeoJSON | null>(null);
   const populationDataCache = useRef<FeatureCollection | null>(null);
   const filtersRef = useRef(filters);
+  const weatherDataCache = useRef<FeatureCollection | null>(null);
+  const weatherParamsCache = useRef<string>("");
+
+
+
+
+
+
 
   // Keep filtersRef in sync with props
   useEffect(() => {
@@ -143,6 +157,371 @@ const Leaflet: React.FC<{
     } else {
       hospitalLayerRef.current?.clearLayers();
     }
+
+    // 4. Handle Rivers
+    if (categories.includes("River")) {
+      console.log("Leaflet: Fetching Rivers...");
+      fetch(`http://localhost:5000/rivers`)
+        .then(res => res.json())
+        .then((data: FeatureCollection) => {
+          console.log("Leaflet: Rivers data received", data.features.length);
+          drawRivers(data);
+        })
+        .catch(err => console.error("Leaflet: River fetch error", err));
+    } else {
+      riverLayerRef.current?.clearLayers();
+    }
+
+    // 5. Handle Airlines
+    if (categories.includes("Airlines")) {
+      console.log("Leaflet: Fetching Airlines...");
+      fetch(`http://localhost:5000/airlines`)
+        .then(res => res.json())
+        .then((data: FeatureCollection) => {
+          console.log("Leaflet: Airlines data received", data.features.length);
+          drawAirlines(data);
+        })
+        .catch(err => console.error("Leaflet: Airline fetch error", err));
+    } else {
+      airlineLayerRef.current?.clearLayers();
+    }
+
+    // 6. Handle Railway
+    if (categories.includes("Railway")) {
+      console.log("Leaflet: Fetching Railways...");
+      fetch(`http://localhost:5000/railways`)
+        .then(res => res.json())
+        .then((data: FeatureCollection) => {
+          console.log("Leaflet: Railways data received", data.features.length);
+          drawRailways(data);
+        })
+        .catch(err => console.error("Leaflet: Railway fetch error", err));
+    } else {
+      railwayLayerRef.current?.clearLayers();
+    }
+
+    // 7. Handle Roads
+    if (categories.includes("Roads")) {
+      console.log("Leaflet: Fetching Roads...");
+      fetch(`http://localhost:5000/roads`)
+        .then(res => res.json())
+        .then((data: FeatureCollection) => {
+          console.log("Leaflet: Roads data received", data.features.length);
+          drawRoads(data);
+        })
+        .catch(err => console.error("Leaflet: Roads fetch error", err));
+    } else {
+      roadLayerRef.current?.clearLayers();
+    }
+
+    // 8. Handle Temperature, Rainfall, Dryness, Flood
+    const weatherCategories = ["Temperature", "Rainfall", "Dryness", "Flood"];
+    if (weatherCategories.some(c => categories.includes(c))) {
+      const activeWeatherParams = `${filters?.start}-${filters?.end}`;
+
+      // Filter valid metrics
+      const validMetrics = ["Temperature", "Rainfall", "Dryness", "Flood"];
+      const activeMetrics = categories.filter(c => validMetrics.includes(c));
+
+      // If none selected but we are in this block, default to Temperature? 
+      // Actually the block is entered if some exist.
+      if (activeMetrics.length === 0) activeMetrics.push("Temperature");
+
+      // Check cache validity (same date range)
+      if (weatherDataCache.current && weatherParamsCache.current === activeWeatherParams) {
+        console.log("Leaflet: Using cached weather data");
+        drawWeather(weatherDataCache.current, activeMetrics);
+      } else {
+        console.log("Leaflet: Fetching Weather Data...");
+        const query = new URLSearchParams({
+          startYear: filters?.start || "",
+          endYear: filters?.end || ""
+        }).toString();
+
+        fetch(`http://localhost:5000/temperature?${query}`)
+          .then(res => res.json())
+          .then((data: FeatureCollection) => {
+            console.log("Leaflet: Weather data received", data.features.length);
+
+            // Update cache
+            weatherDataCache.current = data;
+            weatherParamsCache.current = activeWeatherParams;
+
+            drawWeather(data, activeMetrics);
+          })
+          .catch(err => console.error("Leaflet: Weather fetch error", err));
+      }
+    } else {
+      tempLayerRef.current?.clearLayers();
+    }
+  };
+
+  const drawWeather = (geojson: FeatureCollection, metrics: string[]) => {
+    if (!mapRef.current || !tempLayerRef.current) return;
+    tempLayerRef.current.clearLayers();
+
+    geojson.features.forEach((feature: any) => {
+      if (!feature.geometry || feature.geometry.type !== "Point") return;
+
+      const [lng, lat] = feature.geometry.coordinates;
+      const temp = feature.properties.Temperature;
+      const rainfall = feature.properties.Rainfall || 0;
+      const dryDays = feature.properties.Dryness || 0;
+      const flood = feature.properties.Flood || "Low";
+
+      let badgesHtml = "";
+
+      metrics.forEach(metric => {
+        let valueDisplay = "";
+        let color = "#4caf50";
+
+        if (metric === "Temperature") {
+          color = parseFloat(temp) > 30 ? "#ff5722" : parseFloat(temp) > 20 ? "#ff9800" : "#4caf50";
+          valueDisplay = `${temp}°C`;
+        } else if (metric === "Rainfall") {
+          const r = parseFloat(rainfall);
+          color = r > 200 ? "#0d47a1" : r > 100 ? "#1976d2" : r > 50 ? "#42a5f5" : "#90caf9";
+          valueDisplay = `${r}mm`;
+        } else if (metric === "Dryness") {
+          const d = parseInt(dryDays);
+          color = d > 200 ? "#795548" : d > 100 ? "#a1887f" : "#d7ccc8";
+          valueDisplay = `${d} Days`;
+        } else if (metric === "Flood") {
+          const status = flood;
+          color = status === "High" ? "#b71c1c" : status === "Moderate" ? "#f57f17" : "#8bc34a"; // Red, Orange, Green
+          valueDisplay = status;
+        }
+
+        badgesHtml += `
+          <div style="
+            background: ${color}; 
+            color: white; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            font-size: 11px;
+            border: 1px solid white;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            text-align: center;
+            white-space: nowrap;
+            margin-bottom: 2px;
+            width: 100%;
+          ">${valueDisplay}</div>
+        `;
+      });
+
+      const icon = L.divIcon({
+        className: "weather-icon-group",
+        html: `<div style="display: flex; flex-direction: column; align-items: center;">${badgesHtml}</div>`,
+        iconSize: [40, metrics.length * 20], // approximate height
+        iconAnchor: [20, metrics.length * 10]
+      });
+
+      const marker = L.marker([lat, lng], {
+        pane: "temperature",
+        icon: icon
+      });
+
+      marker.bindPopup(`
+        <strong>${feature.properties.City}</strong><br/>
+        Type: ${metrics.join(", ")}<br/>
+        Temp: ${temp}°C<br/>
+        Avg Rainfall: ${rainfall}mm<br/>
+        Dry Days: ${dryDays}<br/>
+        Condition: ${feature.properties.Description}
+      `);
+
+      marker.on("click", (e) => {
+        if (onFeatureClick) onFeatureClick(feature, e.latlng);
+      });
+
+      marker.addTo(tempLayerRef.current!);
+    });
+  };
+
+  const drawRivers = (geojson: FeatureCollection) => {
+    if (!mapRef.current || !riverLayerRef.current) return;
+    riverLayerRef.current.clearLayers();
+
+    L.geoJSON(geojson, {
+      pane: "rivers",
+      style: {
+        color: "#0077be", // River blue
+        weight: 2,
+        opacity: 0.8,
+        fillOpacity: 0 // Rivers are lines generally
+      },
+      onEachFeature: (feature, layer) => {
+        const pathLayer = layer as L.Path;
+        pathLayer.bindPopup(`
+          <strong>${feature.properties.River_Name || "River"}</strong><br/>
+          Origin: ${feature.properties.Origin || "Unknown"}
+        `);
+
+        pathLayer.on({
+          mouseover: (e) => {
+            pathLayer.setStyle({ weight: 4, opacity: 1, color: "#0099ff" });
+            if (onFeatureHover) onFeatureHover(feature, e.latlng);
+          },
+          mouseout: () => {
+            pathLayer.setStyle({ weight: 2, opacity: 0.8, color: "#0077be" });
+          },
+          click: (e) => {
+            if (onFeatureClick) onFeatureClick(feature, e.latlng);
+          }
+        });
+      }
+    }).addTo(riverLayerRef.current!);
+  };
+
+  const getPlaneSvg = (color: string, size: number) => `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${color}" width="${size}px" height="${size}px">
+      <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+    </svg>
+  `;
+
+  const drawAirlines = (geojson: FeatureCollection) => {
+    if (!mapRef.current || !airlineLayerRef.current) return;
+    airlineLayerRef.current.clearLayers();
+
+    // Airline/Airport style
+    const initialColor = "#5e35b1"; // Deep Purple
+    const hoverColor = "#7e57c2";   // Lighter Purple
+    const initialSize = 24;
+    const hoverSize = 36;
+
+    geojson.features.forEach((feature: any) => {
+      if (!feature.geometry || feature.geometry.type !== "Point") return;
+
+      const [lng, lat] = feature.geometry.coordinates;
+
+      const initialIcon = L.divIcon({
+        className: "leaflet-plane-icon",
+        html: getPlaneSvg(initialColor, initialSize),
+        iconSize: [initialSize, initialSize],
+        iconAnchor: [initialSize / 2, initialSize / 2],
+      });
+
+      const hoverIcon = L.divIcon({
+        className: "leaflet-plane-icon-hover",
+        html: getPlaneSvg(hoverColor, hoverSize),
+        iconSize: [hoverSize, hoverSize],
+        iconAnchor: [hoverSize / 2, hoverSize / 2],
+      });
+
+      const marker = L.marker([lat, lng], {
+        pane: "airlines",
+        icon: initialIcon,
+      });
+
+      marker.bindPopup(`
+        <strong>${feature.properties.Name || "Airport"}</strong><br/>
+        Type: ${feature.properties.Type || "Unknown"}<br/>
+        ${feature.properties.District || ""}, ${feature.properties.State || ""}
+      `);
+
+      marker.on("mouseover", (e) => {
+        marker.setIcon(hoverIcon);
+        marker.setZIndexOffset(1000); // Bring to front
+        if (onFeatureHover) onFeatureHover(feature, e.latlng);
+      });
+
+      marker.on("mouseout", () => {
+        marker.setIcon(initialIcon);
+        marker.setZIndexOffset(0);
+      });
+
+      marker.on("click", (e) => {
+        if (onFeatureClick) onFeatureClick(feature, e.latlng);
+      });
+
+      marker.addTo(airlineLayerRef.current!);
+    });
+  };
+
+  const drawRailways = (geojson: FeatureCollection) => {
+    if (!mapRef.current || !railwayLayerRef.current) return;
+    railwayLayerRef.current.clearLayers();
+
+    // Styled like tracks: Two lines per feature
+    // 1. Base line (sleepers/width)
+    L.geoJSON(geojson, {
+      pane: "railways",
+      style: {
+        color: "#555",
+        weight: 3,
+        opacity: 0.8
+      }
+    }).addTo(railwayLayerRef.current!);
+
+    // 2. Dashed line (rails) - Creates track effect
+    L.geoJSON(geojson, {
+      pane: "railways",
+      style: {
+        color: "#fff",
+        weight: 2,
+        dashArray: "4, 8",
+        opacity: 1
+      },
+      onEachFeature: (feature, layer) => {
+        const pathLayer = layer as L.Path;
+        pathLayer.bindPopup(`
+          <strong>${feature.properties.Name || "Railway"}</strong><br/>
+          Type: ${feature.properties.Type || "Unknown"}
+        `);
+      }
+    }).addTo(railwayLayerRef.current!);
+  };
+
+  const drawRoads = (geojson: FeatureCollection) => {
+    if (!mapRef.current || !roadLayerRef.current) return;
+    roadLayerRef.current.clearLayers();
+
+    L.geoJSON(geojson, {
+      pane: "roads",
+      style: (feature) => {
+        const type = feature?.properties?.Type;
+        let color = "#ffa500"; // Default orange
+        let weight = 2;
+
+        // Simple styling based on highway type
+        if (type === 'motorway' || type === 'trunk') {
+          color = "#e65100"; // Darker orange/red
+          weight = 4;
+        } else if (type === 'primary') {
+          color = "#fb8c00";
+          weight = 3;
+        }
+
+        return {
+          color: color,
+          weight: weight,
+          opacity: 0.8
+        };
+      },
+      onEachFeature: (feature, layer) => {
+        const pathLayer = layer as L.Path;
+        pathLayer.bindPopup(`
+          <strong>${feature.properties.Name || "Road"}</strong><br/>
+          Type: ${feature.properties.Type || "Unknown"}<br/>
+          Surface: ${feature.properties.Surface || "Unknown"}
+        `);
+
+        pathLayer.on({
+          mouseover: (e) => {
+            pathLayer.setStyle({ weight: 5, opacity: 1 });
+            if (onFeatureHover) onFeatureHover(feature, e.latlng);
+          },
+          mouseout: () => {
+            // Reset style - simplified
+            pathLayer.setStyle({ weight: (feature.properties.Type === 'motorway' ? 4 : 2), opacity: 0.8 });
+          },
+          click: (e) => {
+            if (onFeatureClick) onFeatureClick(feature, e.latlng);
+          }
+        });
+      }
+    }).addTo(roadLayerRef.current!);
   };
 
   const drawHospitals = (geojson: FeatureCollection) => {
@@ -342,6 +721,21 @@ const Leaflet: React.FC<{
     map.createPane("population");
     map.getPane("population")!.style.zIndex = "450"; // ABOVE everything (default overlay is 400)
 
+    map.createPane("airlines");
+    map.getPane("airlines")!.style.zIndex = "500"; // Above population
+
+    map.createPane("rivers");
+    map.getPane("rivers")!.style.zIndex = "350"; // Between states and population
+
+    map.createPane("railways");
+    map.getPane("railways")!.style.zIndex = "360"; // Above rivers
+
+    map.createPane("roads");
+    map.getPane("roads")!.style.zIndex = "355"; // Between rivers and railways
+
+    map.createPane("temperature");
+    map.getPane("temperature")!.style.zIndex = "600"; // Topmost
+
     lightTileRef.current = L.tileLayer(
       "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       { pane: "tiles", opacity: opacity / 100 }
@@ -420,6 +814,11 @@ const Leaflet: React.FC<{
     pointLayerRef.current = L.layerGroup().addTo(map);
     populationLayerRef.current = L.layerGroup().addTo(map);
     hospitalLayerRef.current = L.layerGroup().addTo(map);
+    riverLayerRef.current = L.layerGroup().addTo(map);
+    airlineLayerRef.current = L.layerGroup().addTo(map);
+    railwayLayerRef.current = L.layerGroup().addTo(map);
+    roadLayerRef.current = L.layerGroup().addTo(map);
+    tempLayerRef.current = L.layerGroup().addTo(map);
 
     map.on("zoomend", () => fetchGeoJson(filtersRef.current || {}, "true"));
 
@@ -475,12 +874,49 @@ const Leaflet: React.FC<{
     if (!stateLayerRef.current) return;
 
     // Check if Population is active
-    const isActive = filtersRef.current?.category?.includes("Population");
+    const isPopulationActive = filtersRef.current?.category?.includes("Population");
+
+    // Check key districts (states) selection
+    const selectedDistrictsStr = filtersRef.current?.district || "";
+    const selectedDistricts = selectedDistrictsStr ? selectedDistrictsStr.split(",") : [];
 
     stateLayerRef.current.eachLayer((layer: any) => {
       const name = layer.feature?.properties?.state || "";
-      if (isActive) {
-        // Hide fill, maybe keep faint border
+
+      // If we have selected states, highlight them and dim others
+      if (selectedDistricts.length > 0) {
+        if (selectedDistricts.includes(name)) {
+          // HIGHLIGHT
+          layer.setStyle({
+            color: "#000",      // Black border for visibility
+            weight: 2,
+            fillColor: getStateColor(name),
+            fillOpacity: 0.7    // High opacity
+          });
+        } else {
+          // DIM OTHERS
+          layer.setStyle({
+            color: getStateColor(name),
+            weight: 1,
+            fillColor: getStateColor(name),
+            fillOpacity: 0.1    // Low opacity
+          });
+
+          // If population is active, maybe we want to hide them completely?
+          if (isPopulationActive) {
+            layer.setStyle({
+              fillOpacity: 0,
+              opacity: 0,
+              weight: 0
+            });
+          }
+        }
+        return;
+      }
+
+      // DEFAULT BEHAVIOR (No state selected)
+      if (isPopulationActive) {
+        // Hide fill if population is showing (to not obscure density map)
         layer.setStyle({
           fillOpacity: 0,
           opacity: 0,
