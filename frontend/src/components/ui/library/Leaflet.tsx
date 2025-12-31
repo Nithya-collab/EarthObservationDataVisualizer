@@ -206,22 +206,35 @@ const Leaflet: React.FC<{
       roadLayerRef.current?.clearLayers();
     }
 
-    // 8. Handle Temperature
-    if (categories.includes("Temperature")) {
-      console.log("Leaflet: Fetching Temperature...");
-      fetch(`http://localhost:5000/temperature`)
+    // 8. Handle Temperature, Rainfall, Dryness, Flood
+    const weatherCategories = ["Temperature", "Rainfall", "Dryness", "Flood"];
+    if (weatherCategories.some(c => categories.includes(c))) {
+      console.log("Leaflet: Fetching Weather Data...");
+      const query = new URLSearchParams({
+        startYear: filters?.start || "",
+        endYear: filters?.end || ""
+      }).toString();
+
+      fetch(`http://localhost:5000/temperature?${query}`)
         .then(res => res.json())
         .then((data: FeatureCollection) => {
-          console.log("Leaflet: Temperature data received", data.features.length);
-          drawTemperature(data);
+          console.log("Leaflet: Weather data received", data.features.length);
+          // Determine which metric to prioritize for display
+          let activeMetric = "Temperature";
+          if (categories.includes("Rainfall")) activeMetric = "Rainfall";
+          if (categories.includes("Dryness")) activeMetric = "Dryness";
+          if (categories.includes("Flood")) activeMetric = "Flood";
+          if (categories.includes("Temperature")) activeMetric = "Temperature"; // high priority
+
+          drawWeather(data, activeMetric);
         })
-        .catch(err => console.error("Leaflet: Temperature fetch error", err));
+        .catch(err => console.error("Leaflet: Weather fetch error", err));
     } else {
       tempLayerRef.current?.clearLayers();
     }
   };
 
-  const drawTemperature = (geojson: FeatureCollection) => {
+  const drawWeather = (geojson: FeatureCollection, metric: string) => {
     if (!mapRef.current || !tempLayerRef.current) return;
     tempLayerRef.current.clearLayers();
 
@@ -230,12 +243,34 @@ const Leaflet: React.FC<{
 
       const [lng, lat] = feature.geometry.coordinates;
       const temp = feature.properties.Temperature;
+      const rainfall = feature.properties.Rainfall || 0;
+      const dryDays = feature.properties.Dryness || 0;
 
-      // Color based on temp
-      const color = parseFloat(temp) > 30 ? "#ff5722" : parseFloat(temp) > 20 ? "#ff9800" : "#4caf50";
+      let valueDisplay = `${temp}°C`;
+      let color = "#4caf50"; // default green
+
+      if (metric === "Temperature") {
+        color = parseFloat(temp) > 30 ? "#ff5722" : parseFloat(temp) > 20 ? "#ff9800" : "#4caf50";
+        valueDisplay = `${temp}°C`;
+      } else if (metric === "Rainfall") {
+        // Rainfall Logic: High rainfall -> Blue, Low -> Light Blue
+        const r = parseFloat(rainfall);
+        color = r > 200 ? "#0d47a1" : r > 100 ? "#1976d2" : r > 50 ? "#42a5f5" : "#90caf9";
+        valueDisplay = `${r}mm`;
+      } else if (metric === "Dryness") {
+        // Dryness Logic: High dry days -> Brown/Red, Low -> Green
+        const d = parseInt(dryDays);
+        color = d > 200 ? "#795548" : d > 100 ? "#a1887f" : "#d7ccc8";
+        valueDisplay = `${d} Days`;
+      } else if (metric === "Flood") {
+        // Flood Logic
+        const status = feature.properties.Flood || "Low";
+        color = status === "High" ? "#b71c1c" : status === "Moderate" ? "#f57f17" : "#8bc34a"; // Red, Orange, Green
+        valueDisplay = status;
+      }
 
       const icon = L.divIcon({
-        className: "temp-icon",
+        className: "weather-icon",
         html: `<div style="
           background: ${color}; 
           color: white; 
@@ -247,7 +282,8 @@ const Leaflet: React.FC<{
           box-shadow: 0 2px 4px rgba(0,0,0,0.3);
           text-align: center;
           width: fit-content;
-        ">${temp}°C</div>`,
+          white-space: nowrap;
+        ">${valueDisplay}</div>`,
         iconSize: [40, 20],
         iconAnchor: [20, 10]
       });
@@ -259,7 +295,10 @@ const Leaflet: React.FC<{
 
       marker.bindPopup(`
         <strong>${feature.properties.City}</strong><br/>
+        Type: ${metric}<br/>
         Temp: ${temp}°C<br/>
+        Avg Rainfall: ${rainfall}mm<br/>
+        Dry Days: ${dryDays}<br/>
         Condition: ${feature.properties.Description}
       `);
 

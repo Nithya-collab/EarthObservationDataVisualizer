@@ -286,6 +286,9 @@ function SidebarInsetContent({
             const tempDetails = feature.properties.Temperature ? {
               "City": feature.properties.City,
               "Temperature": feature.properties.Temperature + "°C",
+              "Avg Rainfall": (feature.properties.Rainfall || 0) + "mm",
+              "Dry Days": feature.properties.Dryness || 0,
+              "Flood Risk": feature.properties.Flood || "Unknown",
               "Condition": feature.properties.Description
             } : {};
 
@@ -316,6 +319,9 @@ function SidebarInsetContent({
 
             const tempDetails = feature.properties.Temperature ? {
               "Temperature": feature.properties.Temperature + "°C",
+              "Rainfall": (feature.properties.Rainfall || 0) + "mm",
+              "Dryness": feature.properties.Dryness || 0,
+              "Flood Risk": feature.properties.Flood || "Unknown"
             } : {};
 
             setSelectedFeature({ ...baseDetails, ...hospitalDetails, ...riverDetails, ...tempDetails });
@@ -407,6 +413,15 @@ function Legend({ className, activeCategories = [] }: { className?: string, acti
           <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#ff5722]"></div><span>&gt; 30°C (Hot)</span></div>
           <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#ff9800]"></div><span>20°C - 30°C (Warm)</span></div>
           <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#4caf50]"></div><span>&lt; 20°C (Mild)</span></div>
+        </div>
+      )}
+
+      {activeCategories.includes("Flood") && (
+        <div className="space-y-2">
+          <h2 className="font-semibold text-sm mb-2">Flood Risk</h2>
+          <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#b71c1c]"></div><span>High Risk (&gt;250mm)</span></div>
+          <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#f57f17]"></div><span>Moderate Risk</span></div>
+          <div className="flex items-center space-x-2"><div className="w-4 h-4 bg-[#8bc34a]"></div><span>Low/Safe</span></div>
         </div>
       )}
     </div>

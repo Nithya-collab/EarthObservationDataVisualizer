@@ -544,30 +544,18 @@ app.get("/temperature", async (req, res) => {
 
     console.log(`Fetching weather data from ${start} to ${end}`);
 
-    // Major cities with their coordinates
-    const cities = [
-      { name: "Delhi", lat: 28.6139, lng: 77.2090 },
-      { name: "Mumbai", lat: 19.0760, lng: 72.8777 },
-      { name: "Bangalore", lat: 12.9716, lng: 77.5946 },
-      { name: "Chennai", lat: 13.0827, lng: 80.2707 },
-      { name: "Kolkata", lat: 22.5726, lng: 88.3639 },
-      { name: "Hyderabad", lat: 17.3850, lng: 78.4867 },
-      { name: "Pune", lat: 18.5204, lng: 73.8567 },
-      { name: "Ahmedabad", lat: 23.0225, lng: 72.5714 },
-      { name: "Jaipur", lat: 26.9124, lng: 75.7873 },
-      { name: "Lucknow", lat: 26.8467, lng: 80.9461 },
-      { name: "Bhopal", lat: 23.2599, lng: 77.4126 },
-      { name: "Patna", lat: 25.5941, lng: 85.1376 },
-      { name: "Ranchi", lat: 23.3441, lng: 85.3096 },
-      { name: "Bhubaneswar", lat: 20.2961, lng: 85.8245 },
-      { name: "Thiruvananthapuram", lat: 8.5241, lng: 76.9366 },
-      { name: "Raipur", lat: 21.2514, lng: 81.6296 },
-      { name: "Dehradun", lat: 30.3165, lng: 78.0322 },
-      { name: "Shimla", lat: 31.1048, lng: 77.1734 },
-      { name: "Srinagar", lat: 34.0837, lng: 74.7973 }
-    ];
+    // Get coordinates from india_state_border table
+    const locationsResult = await pool.query(`
+      SELECT 
+        name_1 as name, 
+        ST_X(ST_Centroid(wkb_geometry)) as lng, 
+        ST_Y(ST_Centroid(wkb_geometry)) as lat 
+      FROM india_state_border
+    `);
 
-    const weatherData = await Promise.all(cities.map(async (city) => {
+    const locations = locationsResult.rows;
+
+    const weatherData = await Promise.all(locations.map(async (loc) => {
       let temp = null;
       let rainfall = 0;
       let dryDays = 0;
@@ -576,7 +564,7 @@ app.get("/temperature", async (req, res) => {
 
       try {
         // Construct Meteostat API URL
-        const url = `https://meteostat.p.rapidapi.com/point/daily?lat=${city.lat}&lon=${city.lng}&start=${start}&end=${end}`;
+        const url = `https://meteostat.p.rapidapi.com/point/daily?lat=${loc.lat}&lon=${loc.lng}&start=${start}&end=${end}`;
 
         const response = await fetch(url, {
           method: 'GET',
@@ -606,9 +594,6 @@ app.get("/temperature", async (req, res) => {
                 if (day.prcp === 0) {
                   dryDays++;
                 }
-              } else {
-                // assume null prcp might mean no data, or 0? keeping simple
-                // if we don't know, we don't count towards dryness accuracy
               }
               totalDays++;
             });
@@ -617,24 +602,20 @@ app.get("/temperature", async (req, res) => {
               temp = (totalTemp / countTemp).toFixed(1);
             }
             rainfall = rainfall.toFixed(1);
-
-            // Dryness Logic
-            // desc = `Dry Days: ${dryDays}/${totalDays}`;
-            // Simplify description for popup
             desc = countTemp > 0 ? "Data Loaded" : "No Temp Data";
           }
         } else {
-          console.warn(`API call failed for ${city.name}: ${response.status}`);
+          // console.warn(`API call failed for ${loc.name}: ${response.status}`);
         }
       } catch (err) {
-        console.error(`Error fetching weather for ${city.name}:`, err.message);
+        // console.error(`Error fetching weather for ${loc.name}:`, err.message);
       }
 
       // FALLBACK MOCK DATA
       if (temp === null) {
         temp = (Math.random() * (35 - 15) + 15).toFixed(1);
-        rainfall = (Math.random() * 500).toFixed(1); // random rainfall
-        dryDays = Math.floor(Math.random() * 300); // random dry days
+        rainfall = (Math.random() * 500).toFixed(1);
+        dryDays = Math.floor(Math.random() * 300);
         totalDays = 365;
         desc = "Simulated";
       }
@@ -643,13 +624,15 @@ app.get("/temperature", async (req, res) => {
         type: "Feature",
         geometry: {
           type: "Point",
-          coordinates: [city.lng, city.lat]
+          coordinates: [loc.lng, loc.lat]
         },
         properties: {
-          City: city.name,
+          City: loc.name, // Using state name as City/Location name
           Temperature: temp,
           Rainfall: rainfall,
           Dryness: dryDays,
+          Flood: rainfall > 250 ? "High" : rainfall > 100 ? "Moderate" : "Low",
+          FloodStatus: rainfall > 250 ? "Critical" : rainfall > 100 ? "Warning" : "Safe",
           TotalDays: totalDays,
           Description: desc
         }
