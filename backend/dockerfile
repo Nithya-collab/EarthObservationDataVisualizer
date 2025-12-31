@@ -1,0 +1,19 @@
+# Use the latest LTS (Node 24)
+FROM node:24-bookworm-slim
+
+# Install git and postgresql-client
+RUN apt-get update && apt-get install -y \
+    git \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm install
+
+COPY . .
+
+EXPOSE 5000
+
+CMD ["npm", "start"]

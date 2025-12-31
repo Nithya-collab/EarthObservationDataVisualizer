@@ -1,0 +1,15 @@
+# frontend/Dockerfile
+FROM node:24-alpine
+
+# Alpine uses 'apk' instead of 'apt'
+RUN apk add --no-cache git postgresql-client
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+EXPOSE 5173
+CMD ["npm", "run", "dev", "--", "--host"]

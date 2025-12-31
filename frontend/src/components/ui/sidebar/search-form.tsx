@@ -1,28 +1,73 @@
-import { Search } from "lucide-react"
+"use client";
 
-import { Label } from "@/components/ui/label"
+import { useEffect } from "react";
 import {
   SidebarGroup,
   SidebarGroupContent,
-  SidebarInput,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
-export function SearchForm({ ...props }: React.ComponentProps<"form">) {
+import { CityMultiSelect } from "./CityMultiSelect";
+import { useNavigate } from "react-router-dom";
+import YearRangeSelect from "../YearRange";
+
+
+
+
+
+export function SearchForm({
+  districts,
+  setDistricts,
+  range,
+  setRange,
+  category,
+  setCategory,
+  ...props
+}: any) {
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const params = new URLSearchParams({
+      district: districts.join(","),
+      start: String(range[0]),
+      end: String(range[1]),
+      category: category.join(",")
+    });
+
+    navigate(`/?${params.toString()}`, { replace: true });
+
+  }, [districts, range, category]);
+
   return (
-    <form {...props}>
+    <form {...props} onSubmit={(e) => e.preventDefault()}>
       <SidebarGroup className="py-0">
-        <SidebarGroupContent className="relative">
-          <Label htmlFor="search" className="sr-only">
-            Search
-          </Label>
-          <SidebarInput
-            id="search"
-            placeholder="Search the docs..."
-            className="pl-8"
+        <SidebarGroupContent>
+
+          <CityMultiSelect value={districts} onChange={setDistricts} />
+
+          <YearRangeSelect
+            initialStart={range?.[0]}
+            initialEnd={range?.[1]}
+            onChange={setRange}
           />
-          <Search className="pointer-events-none absolute top-1/2 left-2 size-4 -translate-y-1/2 opacity-50 select-none" />
+
+          {category.includes("Hospitals") && (
+            <div className="mt-4">
+              {/* <Label htmlFor="hospital-search" className="text-xs font-semibold mb-2 block">
+                Hospital Name
+              </Label>
+              <Input
+                id="hospital-search"
+                placeholder="Search hospital..."
+                value={props.hospitalSearch}
+                onChange={(e) => props.setHospitalSearch && props.setHospitalSearch(e.target.value)}
+                className="bg-white"
+              /> */}
+            </div>
+          )}
+
         </SidebarGroupContent>
       </SidebarGroup>
     </form>
-  )
+  );
 }

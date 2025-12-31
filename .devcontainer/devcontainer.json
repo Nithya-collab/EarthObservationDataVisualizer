@@ -1,0 +1,33 @@
+{
+  "name": "Geo Data Visualizer",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "backend",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  
+  // Forwarded ports for the backend and frontend
+  "forwardPorts": [5000, 5173, 5432],
+
+  "containerEnv": {
+    "NODE_OPTIONS": "--max-old-space-size=3072"
+  },
+
+  
+  // Setting to true (default) lets VS Code manage the keep-alive.
+  // Setting to false forces VS Code to use your Dockerfile's CMD.
+  "overrideCommand": true ,
+
+  "remoteUser": "root",      // Ensure this matches the 'User: root' in your logs
+  
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-azuretools.vscode-docker",
+        "ms-vscode.vscode-typescript-next",
+        "dbaeumer.vscode-eslint"
+      ]
+    }
+  },
+
+  // Installs dependencies for both folders and prints Node 24 is used
+  "postCreateCommand": "node -v && npm install --prefix backend && npm install --prefix frontend"
+}
