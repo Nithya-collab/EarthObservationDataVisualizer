@@ -219,17 +219,18 @@ const Leaflet: React.FC<{
     if (weatherCategories.some(c => categories.includes(c))) {
       const activeWeatherParams = `${filters?.start}-${filters?.end}`;
 
-      // Determine which metric to prioritize for display
-      let activeMetric = "Temperature";
-      if (categories.includes("Rainfall")) activeMetric = "Rainfall";
-      if (categories.includes("Dryness")) activeMetric = "Dryness";
-      if (categories.includes("Flood")) activeMetric = "Flood";
-      if (categories.includes("Temperature")) activeMetric = "Temperature"; // high priority
+      // Filter valid metrics
+      const validMetrics = ["Temperature", "Rainfall", "Dryness", "Flood"];
+      const activeMetrics = categories.filter(c => validMetrics.includes(c));
+
+      // If none selected but we are in this block, default to Temperature? 
+      // Actually the block is entered if some exist.
+      if (activeMetrics.length === 0) activeMetrics.push("Temperature");
 
       // Check cache validity (same date range)
       if (weatherDataCache.current && weatherParamsCache.current === activeWeatherParams) {
         console.log("Leaflet: Using cached weather data");
-        drawWeather(weatherDataCache.current, activeMetric);
+        drawWeather(weatherDataCache.current, activeMetrics);
       } else {
         console.log("Leaflet: Fetching Weather Data...");
         const query = new URLSearchParams({
@@ -246,7 +247,7 @@ const Leaflet: React.FC<{
             weatherDataCache.current = data;
             weatherParamsCache.current = activeWeatherParams;
 
-            drawWeather(data, activeMetric);
+            drawWeather(data, activeMetrics);
           })
           .catch(err => console.error("Leaflet: Weather fetch error", err));
       }
@@ -255,7 +256,7 @@ const Leaflet: React.FC<{
     }
   };
 
-  const drawWeather = (geojson: FeatureCollection, metric: string) => {
+  const drawWeather = (geojson: FeatureCollection, metrics: string[]) => {
     if (!mapRef.current || !tempLayerRef.current) return;
     tempLayerRef.current.clearLayers();
 
@@ -266,47 +267,54 @@ const Leaflet: React.FC<{
       const temp = feature.properties.Temperature;
       const rainfall = feature.properties.Rainfall || 0;
       const dryDays = feature.properties.Dryness || 0;
+      const flood = feature.properties.Flood || "Low";
 
-      let valueDisplay = `${temp}°C`;
-      let color = "#4caf50"; // default green
+      let badgesHtml = "";
 
-      if (metric === "Temperature") {
-        color = parseFloat(temp) > 30 ? "#ff5722" : parseFloat(temp) > 20 ? "#ff9800" : "#4caf50";
-        valueDisplay = `${temp}°C`;
-      } else if (metric === "Rainfall") {
-        // Rainfall Logic: High rainfall -> Blue, Low -> Light Blue
-        const r = parseFloat(rainfall);
-        color = r > 200 ? "#0d47a1" : r > 100 ? "#1976d2" : r > 50 ? "#42a5f5" : "#90caf9";
-        valueDisplay = `${r}mm`;
-      } else if (metric === "Dryness") {
-        // Dryness Logic: High dry days -> Brown/Red, Low -> Green
-        const d = parseInt(dryDays);
-        color = d > 200 ? "#795548" : d > 100 ? "#a1887f" : "#d7ccc8";
-        valueDisplay = `${d} Days`;
-      } else if (metric === "Flood") {
-        // Flood Logic
-        const status = feature.properties.Flood || "Low";
-        color = status === "High" ? "#b71c1c" : status === "Moderate" ? "#f57f17" : "#8bc34a"; // Red, Orange, Green
-        valueDisplay = status;
-      }
+      metrics.forEach(metric => {
+        let valueDisplay = "";
+        let color = "#4caf50";
+
+        if (metric === "Temperature") {
+          color = parseFloat(temp) > 30 ? "#ff5722" : parseFloat(temp) > 20 ? "#ff9800" : "#4caf50";
+          valueDisplay = `${temp}°C`;
+        } else if (metric === "Rainfall") {
+          const r = parseFloat(rainfall);
+          color = r > 200 ? "#0d47a1" : r > 100 ? "#1976d2" : r > 50 ? "#42a5f5" : "#90caf9";
+          valueDisplay = `${r}mm`;
+        } else if (metric === "Dryness") {
+          const d = parseInt(dryDays);
+          color = d > 200 ? "#795548" : d > 100 ? "#a1887f" : "#d7ccc8";
+          valueDisplay = `${d} Days`;
+        } else if (metric === "Flood") {
+          const status = flood;
+          color = status === "High" ? "#b71c1c" : status === "Moderate" ? "#f57f17" : "#8bc34a"; // Red, Orange, Green
+          valueDisplay = status;
+        }
+
+        badgesHtml += `
+          <div style="
+            background: ${color}; 
+            color: white; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            font-size: 11px;
+            border: 1px solid white;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            text-align: center;
+            white-space: nowrap;
+            margin-bottom: 2px;
+            width: 100%;
+          ">${valueDisplay}</div>
+        `;
+      });
 
       const icon = L.divIcon({
-        className: "weather-icon",
-        html: `<div style="
-          background: ${color}; 
-          color: white; 
-          padding: 4px 8px; 
-          border-radius: 12px; 
-          font-weight: bold; 
-          font-size: 12px;
-          border: 2px solid white;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-          text-align: center;
-          width: fit-content;
-          white-space: nowrap;
-        ">${valueDisplay}</div>`,
-        iconSize: [40, 20],
-        iconAnchor: [20, 10]
+        className: "weather-icon-group",
+        html: `<div style="display: flex; flex-direction: column; align-items: center;">${badgesHtml}</div>`,
+        iconSize: [40, metrics.length * 20], // approximate height
+        iconAnchor: [20, metrics.length * 10]
       });
 
       const marker = L.marker([lat, lng], {
@@ -316,7 +324,7 @@ const Leaflet: React.FC<{
 
       marker.bindPopup(`
         <strong>${feature.properties.City}</strong><br/>
-        Type: ${metric}<br/>
+        Type: ${metrics.join(", ")}<br/>
         Temp: ${temp}°C<br/>
         Avg Rainfall: ${rainfall}mm<br/>
         Dry Days: ${dryDays}<br/>
